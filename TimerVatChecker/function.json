@@ -4,8 +4,8 @@
       "name": "myTimer",
       "type": "timerTrigger",
       "direction": "in",
-      "schedule": "0 */1 * * * *"
+      "schedule": "0 0 */1 * * *"
     }
   ],
-  "scriptFile": "../dist/VatChecker/index.js"
+  "scriptFile": "../dist/TimerVatChecker/index.js"
 }
