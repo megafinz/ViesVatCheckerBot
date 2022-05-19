@@ -76,7 +76,3 @@ When you register an entity in EU, chances are that you need to be registered in
 ## Alternative Use Case
 
 You need to verify that some other entity has a valid VAT number for transactions within EU.
-
-# License
-
-MIT. Feel free to use this code for whatever purposes.
