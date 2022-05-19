@@ -14,8 +14,7 @@ bot.command("check", async ctx => {
         ctx.reply("Please provide arguments in format /check COUNTRY_CODE VAT_NUMBER");
     } else {
         try {
-            const result = await axios.post(HTTP_API_URL, {
-                action: "check",
+            const result = await axios.post(`${HTTP_API_URL}/check`, {
                 telegramChatId: ctx.chat.id,
                 countryCode: params[0],
                 vatNumber: params[1]
@@ -34,8 +33,7 @@ bot.command("uncheck", async ctx => {
         ctx.reply("Please provide arguments in format /uncheck COUNTRY_CODE VAT_NUMBER");
     } else {
         try {
-            const result = await axios.post(HTTP_API_URL, {
-                action: "uncheck",
+            const result = await axios.post(`${HTTP_API_URL}/uncheck`, {
                 telegramChatId: ctx.chat.id,
                 countryCode: params[0],
                 vatNumber: params[1]
@@ -47,12 +45,20 @@ bot.command("uncheck", async ctx => {
     }
 });
 
+
+
+bot.command("uncheckAll", async ctx => {
+    try {
+        const result = await axios.post(`${HTTP_API_URL}/uncheckAll`, { telegramChatId: ctx.chat.id });
+        ctx.reply(result.data);
+    } catch (error) {
+        ctx.reply(error.data);
+    }
+});
+
 bot.command("list", async ctx => {
     try {
-        const result = await axios.post(HTTP_API_URL, {
-            action: "list",
-            telegramChatId: ctx.chat.id
-        });
+        const result = await axios.get(`${HTTP_API_URL}/list?telegramChatId=${ctx.chat.id}`);
         ctx.reply(result.data);
     } catch (error) {
         ctx.reply(error.data);

@@ -55,3 +55,7 @@ export const getAllVatRequests = async (telegramChatId?: string) => {
         vatNumber: m.vatNumber
     }));
 };
+
+export const removeAllVatRequests = async (telegramChatId: string) => {
+    return await VatRequestModel.deleteMany({ telegramChatId: telegramChatId });
+}

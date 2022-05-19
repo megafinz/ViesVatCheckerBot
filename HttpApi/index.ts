@@ -3,16 +3,25 @@ import { VatRequest } from "../models";
 import * as db from "../lib/db";
 import * as vies from "../lib/vies";
 
+type Action = "check" | "uncheck" | "uncheckAll" | "list";
+
+const allowedActions: Action[] = [
+    "check",
+    "uncheck",
+    "uncheckAll",
+    "list"
+];
+
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const telegramChatId = req.query.telegramChatId || req.body?.telegramChatId;
-    const action = req.query.action || req.body?.action;
+    const action = <Action>req.params.action;
 
     if (!telegramChatId) {
         const message = "Missing Telegram Chat ID";
         console.log(message);
         context.res = { status: 400, body: message };
-    } else if (!action || (action !== "check" && action !== "uncheck" && action !== "list")) {
-        const message = "Missing or invalid action (should be one of the following: 'check', 'uncheck', 'list')";
+    } else if (!allowedActions.includes(action)) {
+        const message = `Missing or invalid action (should be one of the following: ${allowedActions.join(", ")})`;
         console.log(message);
         context.res = { status: 400, body: message };
     } else {
@@ -37,6 +46,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 };
 
                 result = action === 'check' ? await check(vatRequest) : await uncheck(vatRequest);
+                break;
+
+            case "uncheckAll":
+                result = await uncheckAll(telegramChatId);
                 break;
 
             case "list":
@@ -86,8 +99,14 @@ async function list(telegramChatId: string) {
     if (result.length > 0) {
         return `You monitor the following VAT numbers: ${result.map(vr => `'${vr.countryCode}${vr.vatNumber}'`).join(', ')}.`;
     } else {
-        return `You didn't register any VAT numbers for monitoring.`;
+        return `You are not monitoring any VAT numbers.`;
     }
+}
+
+async function uncheckAll(telegramChatId: string) {
+    await db.init();
+    await db.removeAllVatRequests(telegramChatId);
+    return "You no longer monitor any VAT numbers.";
 }
 
 export default httpTrigger;
