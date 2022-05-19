@@ -1,7 +1,7 @@
 import { Schema, model, connect } from "mongoose";
 import { VatRequest } from "../models";
 
-const { CosmosDBConnectionString } = process.env;
+const { MONGODB_CONNECTION_STRING } = process.env;
 
 let db = null;
 
@@ -15,7 +15,7 @@ const VatRequestModel = model("VatRequest", VatRequestSchema, "VatRequests");
 
 export const init = async () => {
     if (!db) {
-        db = await connect(CosmosDBConnectionString);
+        db = await connect(MONGODB_CONNECTION_STRING);
     }
 };
 
