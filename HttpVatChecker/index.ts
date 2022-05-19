@@ -1,7 +1,7 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
+import { VatRequest } from "../models";
 import * as db from "../lib/db";
 import * as vies from "../lib/vies";
-import { VatRequest } from "../models";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const telegramChatId = req.query.telegramChatId || req.body?.telegramChatId;

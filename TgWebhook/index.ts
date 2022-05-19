@@ -2,10 +2,10 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions";
 import { Telegraf } from "telegraf";
 import { default as axios } from "axios";
 
-const { TgBotToken, TgWebhookUrl, CheckVatNumberFunctionUrl } = process.env;
+const { TG_BOT_TOKEN, TG_API_URL, HTTP_API_URL } = process.env;
 
-const bot = new Telegraf(TgBotToken, { telegram: { webhookReply: true }});
-bot.telegram.setWebhook(TgWebhookUrl);
+const bot = new Telegraf(TG_BOT_TOKEN, { telegram: { webhookReply: true }});
+bot.telegram.setWebhook(TG_API_URL);
 
 bot.command("check", async ctx => {
     const params = ctx.update.message.text.split(' ').slice(1);
@@ -14,7 +14,7 @@ bot.command("check", async ctx => {
         ctx.reply("Please provide arguments in format /check COUNTRY_CODE VAT_NUMBER");
     } else {
         try {
-            const result = await axios.post(CheckVatNumberFunctionUrl, {
+            const result = await axios.post(HTTP_API_URL, {
                 action: "check",
                 telegramChatId: ctx.chat.id,
                 countryCode: params[0],
@@ -34,7 +34,7 @@ bot.command("uncheck", async ctx => {
         ctx.reply("Please provide arguments in format /uncheck COUNTRY_CODE VAT_NUMBER");
     } else {
         try {
-            const result = await axios.post(CheckVatNumberFunctionUrl, {
+            const result = await axios.post(HTTP_API_URL, {
                 action: "uncheck",
                 telegramChatId: ctx.chat.id,
                 countryCode: params[0],
@@ -49,7 +49,7 @@ bot.command("uncheck", async ctx => {
 
 bot.command("list", async ctx => {
     try {
-        const result = await axios.post(CheckVatNumberFunctionUrl, {
+        const result = await axios.post(HTTP_API_URL, {
             action: "list",
             telegramChatId: ctx.chat.id
         });

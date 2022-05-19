@@ -3,10 +3,10 @@ import * as db from "../lib/db";
 import * as vies from "../lib/vies";
 import { default as axios } from "axios";
 
-const { TgBotToken } = process.env;
+const { TG_BOT_TOKEN } = process.env;
 
 async function sendTgMessage(chatId: string, message: string) {
-    const tgUrl = `https://api.telegram.org/bot${TgBotToken}/sendMessage`;
+    const tgUrl = `https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`;
 
     return await axios.post(tgUrl, {
         chat_id: chatId,
@@ -14,7 +14,7 @@ async function sendTgMessage(chatId: string, message: string) {
     });
 }
 
-const timerTrigger: AzureFunction = async function (context: Context): Promise<void> {
+const timerTrigger: AzureFunction = async function (_: Context): Promise<void> {
     await db.init();
     await vies.init();
 

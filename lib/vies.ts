@@ -1,13 +1,13 @@
 import * as soap from "soap";
 import { VatRequest } from "../models";
 
-const { ViesUrl } = process.env;
+const { VIES_URL } = process.env;
 
 let vies = null;
 
 export const init = async() => {
     if (!vies) {
-        vies = await soap.createClientAsync(ViesUrl);
+        vies = await soap.createClientAsync(VIES_URL);
     }
 };
 
