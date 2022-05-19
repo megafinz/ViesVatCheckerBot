@@ -58,7 +58,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 break;
         }
 
-        console.log(result.message);
+        context.log(result.message);
 
         context.res = {
             status: result.success ? 200 : 400,

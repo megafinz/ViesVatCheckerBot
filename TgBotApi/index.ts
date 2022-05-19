@@ -49,7 +49,7 @@ bot.command("uncheck", async ctx => {
     }
 });
 
-bot.command("uncheckAll", async ctx => {
+bot.command("uncheckall", async ctx => {
     try {
         const result = await axios.post(`${HTTP_API_URL}/uncheckAll?code=${HTTP_API_TOKEN}`, { telegramChatId: ctx.chat.id });
         ctx.reply(result.data);
@@ -72,7 +72,7 @@ bot.command("list", async ctx => {
 });
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
-    console.log("Webhook triggered");
+    context.log("Webhook triggered");
     return bot.handleUpdate(req.body, <any>context.res);
 };
 

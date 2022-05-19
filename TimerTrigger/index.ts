@@ -14,7 +14,7 @@ async function sendTgMessage(chatId: string, message: string) {
     });
 }
 
-const timerTrigger: AzureFunction = async function (_: Context): Promise<void> {
+const timerTrigger: AzureFunction = async function (context: Context): Promise<void> {
     await db.init();
     await vies.init();
 
@@ -25,21 +25,21 @@ const timerTrigger: AzureFunction = async function (_: Context): Promise<void> {
             const result = await vies.checkVatNumber(vatRequest);
 
             if (result.valid) {
-                console.log(`VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} is valid, removing it from the validation queue`)
+                context.log(`VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} is valid, removing it from the validation queue`)
                 await db.removeVatRequest(vatRequest);
-                console.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
+                context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
                 await sendTgMessage(vatRequest.telegramChatId, `Congratulations, VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is now VALID!`);
             }
         } catch (error) {
             // TODO: handle transient errors
             if (error.message?.contains("MS_UNAVAILABLE")) {
-                console.log("VIES API is unavailable right now");
+                context.log("VIES API is unavailable right now");
                 break;
             }
 
-            console.log(`ERROR, removing VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} from validation queue: ${error.message}`);
+            context.log(`ERROR, removing VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} from validation queue: ${error.message}`);
             await db.removeVatRequest(vatRequest);
-            console.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
+            context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
             await sendTgMessage(vatRequest.telegramChatId, `Sorry, something went wrong and VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' had to be removed from the validation queue.`)
         }
     }
