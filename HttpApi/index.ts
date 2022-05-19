@@ -76,6 +76,13 @@ async function check(vatRequest: VatRequest): Promise<Result> {
             return { success: true, message: `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is valid.` };
         } else {
             await db.init();
+
+            const existingVatRequest = await db.findVatRequest(vatRequest);
+
+            if (!existingVatRequest) {
+                await db.addVatRequest(vatRequest);
+            }
+
             return { success: true, message: `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. You will be notified when it becomes valid.` };
         }
     } catch (error) {
