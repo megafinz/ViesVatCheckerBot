@@ -13,6 +13,7 @@ export const init = async() => {
 
 export const checkVatNumber = async (vatRequest: VatRequest) => {
     // TODO: handle errors.
+    // TODO: resilience.
     const result = await vies.checkVatAsync(vatRequest);
     return result[0];
 }
