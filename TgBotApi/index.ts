@@ -12,6 +12,7 @@ bot.command("check", async ctx => {
 
     if (params.length !== 1) {
         ctx.reply("Please provide a single VAT number prefixed by country code: /check VAT_NUMBER (example: /check PL1234567890).");
+        console.log("Check called with invalid params");
     } else {
         try {
             const result = await axios.post(`${HTTP_API_URL}/check`, {
@@ -19,8 +20,10 @@ bot.command("check", async ctx => {
                 vatNumber: params[0]
             });
             ctx.reply(result.data);
+            console.log("Check success");
         } catch (error) {
             ctx.reply(error.response.data);
+            console.log("Check failure");
         }
     }
 });
@@ -30,6 +33,7 @@ bot.command("uncheck", async ctx => {
 
     if (params.length !== 1) {
         ctx.reply("Please provide a single VAT number prefixed by country code: /uncheck VAT_NUMBER(example: /uncheck PL1234567890).");
+        console.log("Uncheck called with invalid params");
     } else {
         try {
             const result = await axios.post(`${HTTP_API_URL}/uncheck`, {
@@ -37,8 +41,10 @@ bot.command("uncheck", async ctx => {
                 vatNumber: params[0]
             });
             ctx.reply(result.data);
+            console.log("Uncheck success");
         } catch (error) {
             ctx.reply(error.response.data);
+            console.log("Uncheck failure");
         }
     }
 });
@@ -47,8 +53,10 @@ bot.command("uncheckAll", async ctx => {
     try {
         const result = await axios.post(`${HTTP_API_URL}/uncheckAll`, { telegramChatId: ctx.chat.id });
         ctx.reply(result.data);
+        console.log("UncheckAll success");
     } catch (error) {
         ctx.reply(error.response.data);
+        console.log("UncheckAll failure");
     }
 });
 
@@ -56,12 +64,15 @@ bot.command("list", async ctx => {
     try {
         const result = await axios.get(`${HTTP_API_URL}/list?telegramChatId=${ctx.chat.id}`);
         ctx.reply(result.data);
+        console.log("List success");
     } catch (error) {
         ctx.reply(error.response.data);
+        console.log("List failure");
     }
 });
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
+    console.log("Webhook triggered");
     return bot.handleUpdate(req.body, <any>context.res);
 };
 
