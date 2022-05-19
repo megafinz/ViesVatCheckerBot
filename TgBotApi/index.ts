@@ -43,8 +43,6 @@ bot.command("uncheck", async ctx => {
     }
 });
 
-
-
 bot.command("uncheckAll", async ctx => {
     try {
         const result = await axios.post(`${HTTP_API_URL}/uncheckAll`, { telegramChatId: ctx.chat.id });

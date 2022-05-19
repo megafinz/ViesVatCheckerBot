@@ -22,7 +22,7 @@ export const init = async () => {
 export const addVatRequest = async (doc: VatRequest) => {
     const modelToInsert = new VatRequestModel();
     modelToInsert["telegramChatId"] = doc.telegramChatId;
-    modelToInsert["countryCode"] = doc.countryCode.toUpperCase();
+    modelToInsert["countryCode"] = doc.countryCode;
     modelToInsert["vatNumber"] = doc.vatNumber;
     return await modelToInsert.save();
 };
