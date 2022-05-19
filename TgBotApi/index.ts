@@ -2,10 +2,10 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions";
 import { Telegraf } from "telegraf";
 import { default as axios } from "axios";
 
-const { TG_BOT_TOKEN, TG_API_URL, HTTP_API_URL } = process.env;
+const { TG_BOT_TOKEN, TG_BOT_API_URL, HTTP_API_URL } = process.env;
 
 const bot = new Telegraf(TG_BOT_TOKEN, { telegram: { webhookReply: true }});
-bot.telegram.setWebhook(TG_API_URL);
+bot.telegram.setWebhook(TG_BOT_API_URL);
 
 bot.command("check", async ctx => {
     const params = ctx.update.message.text.split(' ').slice(1);

@@ -16,5 +16,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/TgWebhook/index.js"
+  "scriptFile": "../dist/TgBotApi/index.js"
 }

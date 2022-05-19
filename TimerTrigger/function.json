@@ -7,5 +7,5 @@
       "schedule": "0 0 */1 * * *"
     }
   ],
-  "scriptFile": "../dist/TimerVatChecker/index.js"
+  "scriptFile": "../dist/TimerTrigger/index.js"
 }

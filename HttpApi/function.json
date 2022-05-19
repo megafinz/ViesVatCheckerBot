@@ -16,5 +16,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/HttpVatChecker/index.js"
+  "scriptFile": "../dist/HttpApi/index.js"
 }
