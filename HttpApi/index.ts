@@ -4,6 +4,7 @@ import * as db from "../lib/db";
 import * as vies from "../lib/vies";
 
 type Action = "check" | "uncheck" | "uncheckAll" | "list";
+type Result = { success: boolean; message: string };
 
 const allowedActions: Action[] = [
     "check",
@@ -16,32 +17,32 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const telegramChatId = req.query.telegramChatId || req.body?.telegramChatId;
     const action = <Action>req.params.action;
 
-    if (!telegramChatId) {
-        const message = "Missing Telegram Chat ID";
-        console.log(message);
-        context.res = { status: 400, body: message };
-    } else if (!allowedActions.includes(action)) {
-        const message = `Missing or invalid action (should be one of the following: ${allowedActions.join(", ")})`;
-        console.log(message);
-        context.res = { status: 400, body: message };
-    } else {
-        let result = null;
+    let result = null;
 
+    if (!telegramChatId) {
+        result = { success: false, message: "Missing Telegram Chat ID" };
+    } else if (!allowedActions.includes(action)) {
+        result = { success: false, message: `Missing or invalid action (should be one of the following: ${allowedActions.join(", ")})` };
+    } else {
         switch (action) {
             case "check":
             case "uncheck":
-                const countryCode = req.query.countryCode || req.body?.countryCode;
-                const vatNumber = req.query.vatNumber || req.body?.vatNumber;
+                let vatNumber: string = req.query.vatNumber || req.body?.vatNumber;
 
-                if (!countryCode || !vatNumber) {
-                    const message = "Missing countryCode or vatNumber";
-                    console.log(message);
-                    context.res = { status: 400, body: message };
+                if (!vatNumber) {
+                    result = { success: false, message: "Missing VAT number." };
+                    break;
+                } else if (vatNumber.length < 3) {
+                    result = { success: false, message: "VAT number is in invalid format (expected at least 3 symbols)." };
+                    break;
                 }
+
+                const countryCode = vatNumber.substring(0, 2).toUpperCase();
+                vatNumber = vatNumber.substring(2);
 
                 const vatRequest = {
                     telegramChatId: telegramChatId,
-                    countryCode: countryCode.toUpperCase(),
+                    countryCode: countryCode,
                     vatNumber: vatNumber
                 };
 
@@ -57,56 +58,58 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 break;
         }
 
-        console.log(result);
-        context.res = { body: result };
+        console.log(result.message);
+
+        context.res = {
+            status: result.success ? 200 : 400,
+            body: result.message
+        };
     }
 };
 
-async function check(vatRequest: VatRequest) {
+async function check(vatRequest: VatRequest): Promise<Result> {
     try {
         await vies.init();
         const result = await vies.checkVatNumber(vatRequest);
 
         if (result.valid) {
-            return `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is valid.`;
+            return { success: true, message: `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is valid.` };
         } else {
             await db.init();
-            const existingVatRequest = await db.findVatRequest(vatRequest);
-
-            if (existingVatRequest) {
-                return `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not valid, but already exists in the validation queue.`;
-            } else {
-                await db.addVatRequest(vatRequest);
-                return `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not valid, added it to the validation queue.`;
-            }
+            return { success: true, message: `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. You will be notified when it becomes valid.` };
         }
     } catch (error) {
-        await db.addVatRequest(vatRequest);
-        return `There was a problem validating VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}', added it to the validation queue: ${error}.`;
+        // TODO: recognize more unrecoverable errors
+        if (error.includes("INVALID_INPUT")) {
+            return { success: false, message: `There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Make sure it is in the correct format. This is the error message that we got from VIES: ${error}.` }
+        } else {
+            await db.addVatRequest(vatRequest);
+            return { success: false, message: `There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll keep monitoring it for a while. This is the error message that we got from VIES: ${error}.` };
+        }
     }
 }
 
-async function uncheck(vatRequest: VatRequest) {
+async function uncheck(vatRequest: VatRequest): Promise<Result> {
     await db.init();
     await db.removeVatRequest(vatRequest);
-    return `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' has been removed from the validation queue.`;
+    return { success: true, message: `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is no longer being monitored.` };
 }
 
-async function list(telegramChatId: string) {
+async function list(telegramChatId: string): Promise<Result> {
     await db.init();
     const result = await db.getAllVatRequests(telegramChatId);
 
     if (result.length > 0) {
-        return `You monitor the following VAT numbers: ${result.map(vr => `'${vr.countryCode}${vr.vatNumber}'`).join(', ')}.`;
+        return { success: true, message: `You monitor the following VAT numbers: ${result.map(vr => `'${vr.countryCode}${vr.vatNumber}'`).join(', ')}.` };
     } else {
-        return `You are not monitoring any VAT numbers.`;
+        return { success: true, message: "You are not monitoring any VAT numbers." };
     }
 }
 
-async function uncheckAll(telegramChatId: string) {
+async function uncheckAll(telegramChatId: string): Promise<Result> {
     await db.init();
     await db.removeAllVatRequests(telegramChatId);
-    return "You no longer monitor any VAT numbers.";
+    return { success: true, message: "You no longer monitor any VAT numbers." };
 }
 
 export default httpTrigger;

@@ -10,18 +10,17 @@ bot.telegram.setWebhook(TG_BOT_API_URL);
 bot.command("check", async ctx => {
     const params = ctx.update.message.text.split(' ').slice(1);
 
-    if (params.length !== 2) {
-        ctx.reply("Please provide arguments in format /check COUNTRY_CODE VAT_NUMBER");
+    if (params.length !== 1) {
+        ctx.reply("Please provide a single VAT number prefixed by country code: /check VAT_NUMBER (example: /check PL1234567890).");
     } else {
         try {
             const result = await axios.post(`${HTTP_API_URL}/check`, {
                 telegramChatId: ctx.chat.id,
-                countryCode: params[0],
-                vatNumber: params[1]
+                vatNumber: params[0]
             });
             ctx.reply(result.data);
         } catch (error) {
-            ctx.reply(error.data);
+            ctx.reply(error.response.data);
         }
     }
 });
@@ -29,18 +28,17 @@ bot.command("check", async ctx => {
 bot.command("uncheck", async ctx => {
     const params = ctx.update.message.text.split(' ').slice(1);
 
-    if (params.length !== 2) {
-        ctx.reply("Please provide arguments in format /uncheck COUNTRY_CODE VAT_NUMBER");
+    if (params.length !== 1) {
+        ctx.reply("Please provide a single VAT number prefixed by country code: /uncheck VAT_NUMBER(example: /uncheck PL1234567890).");
     } else {
         try {
             const result = await axios.post(`${HTTP_API_URL}/uncheck`, {
                 telegramChatId: ctx.chat.id,
-                countryCode: params[0],
-                vatNumber: params[1]
+                vatNumber: params[0]
             });
             ctx.reply(result.data);
         } catch (error) {
-            ctx.reply(error.data);
+            ctx.reply(error.response.data);
         }
     }
 });
@@ -52,7 +50,7 @@ bot.command("uncheckAll", async ctx => {
         const result = await axios.post(`${HTTP_API_URL}/uncheckAll`, { telegramChatId: ctx.chat.id });
         ctx.reply(result.data);
     } catch (error) {
-        ctx.reply(error.data);
+        ctx.reply(error.response.data);
     }
 });
 
@@ -61,7 +59,7 @@ bot.command("list", async ctx => {
         const result = await axios.get(`${HTTP_API_URL}/list?telegramChatId=${ctx.chat.id}`);
         ctx.reply(result.data);
     } catch (error) {
-        ctx.reply(error.data);
+        ctx.reply(error.response.data);
     }
 });
 
