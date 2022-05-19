@@ -87,7 +87,7 @@ async function check(vatRequest: VatRequest): Promise<Result> {
         }
     } catch (error) {
         // TODO: recognize more unrecoverable errors
-        if (error.includes("INVALID_INPUT")) {
+        if (error.message?.includes("INVALID_INPUT")) {
             return { success: false, message: `There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Make sure it is in the correct format. This is the error message that we got from VIES: ${error}.` }
         } else {
             await db.addVatRequest(vatRequest);
