@@ -88,10 +88,10 @@ async function check(vatRequest: VatRequest): Promise<Result> {
     } catch (error) {
         // TODO: recognize more unrecoverable errors
         if (error.message?.includes("INVALID_INPUT")) {
-            return { success: false, message: `There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Make sure it is in the correct format. This is the error message that we got from VIES: ${error}.` }
+            return { success: false, message: `There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Make sure it is in the correct format. This is the error message that we got from VIES:\n\n${error}.` }
         } else {
             await db.addVatRequest(vatRequest);
-            return { success: false, message: `There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll keep monitoring it for a while. This is the error message that we got from VIES: ${error}.` };
+            return { success: false, message: `There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll keep monitoring it for a while. This is the error message that we got from VIES:\n\n${error}.` };
         }
     }
 }
@@ -107,7 +107,7 @@ async function list(telegramChatId: string): Promise<Result> {
     const result = await db.getAllVatRequests(telegramChatId);
 
     if (result.length > 0) {
-        return { success: true, message: `You monitor the following VAT numbers: ${result.map(vr => `'${vr.countryCode}${vr.vatNumber}'`).join(', ')}.` };
+        return { success: true, message: `You monitor the following VAT numbers:\n\n${result.map(vr => `'${vr.countryCode}${vr.vatNumber}'`).join(', ')}.` };
     } else {
         return { success: true, message: "You are not monitoring any VAT numbers." };
     }
