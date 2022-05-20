@@ -29,7 +29,7 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
                 await db.removeVatRequest(vatRequest);
                 context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
                 await sendTgMessage(vatRequest.telegramChatId, `Congratulations, VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is now VALID!`);
-            } else if (vatRequest.expirationDate.getTime() > Date.now()) {
+            } else if (Date.now() > vatRequest.expirationDate.getTime()) {
                 context.log(`VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} is expired, removing it from the validation queue`);
                 await db.removeVatRequest(vatRequest);
                 context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
@@ -38,7 +38,7 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
             }
         } catch (error) {
             // TODO: handle transient errors
-            if (error.message?.contains("MS_UNAVAILABLE")) {
+            if (error.message?.includes("MS_UNAVAILABLE")) {
                 context.log("VIES API is unavailable right now");
                 break;
             }
