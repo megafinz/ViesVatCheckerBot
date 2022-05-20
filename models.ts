@@ -3,3 +3,7 @@ export interface VatRequest {
     countryCode: string;
     vatNumber: string;
 }
+
+export interface PendingVatRequest extends VatRequest {
+    expirationDate: Date;
+}

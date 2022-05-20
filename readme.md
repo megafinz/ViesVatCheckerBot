@@ -53,7 +53,8 @@ You can't run this as is.
     "TG_BOT_API_TOKEN": "", // not required for local deployment
     "HTTP_API_URL": "http://localhost:7071/api/HttpApi",
     "HTTP_API_TOKEN": "", // not required for local deployment
-    "MAX_PENDING_VAT_NUMBERS_PER_USER": 10
+    "MAX_PENDING_VAT_NUMBERS_PER_USER": 10,
+    "VAT_NUMBER_EXPIRATION_DAYS": 90
   }
 }
 ```
@@ -67,6 +68,7 @@ You can't run this as is.
    - `HTTP_API_TOKEN` is the auth code of **HttpApi** function.
    - Note that you can retrieve the URL with code by selecting "Copy Function URL" in the context menu of a specific deployed function (e.g. `https://{your-project-name}.azurewebsites.net/api/httpapi?code={http-api-function-auth-code}`).
    - `MAX_PENDING_APP_NUMBERS_PER_USER` should be self-explanatory.
+   - `VAT_NUMBER_EXPIRATION_DAYS` defines a period after which VAT number should stop being monitored (to handle the case when it never becomes valid).
 
 # Why Does It Do That?
 
