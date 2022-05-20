@@ -2,8 +2,9 @@ import { VatRequest } from '../models';
 import * as vies from '../lib/vies';
 import * as db from '../lib/db';
 
-const { MAX_PENDING_VAT_NUMBERS_PER_USER } = process.env;
+const { MAX_PENDING_VAT_NUMBERS_PER_USER, VAT_NUMBER_EXPIRATION_DAYS } = process.env;
 const maxPendingVatNumbersPerUser = parseInt(MAX_PENDING_VAT_NUMBERS_PER_USER);
+const vatNumberExpirationDays = parseInt(VAT_NUMBER_EXPIRATION_DAYS);
 
 export type Result = { success: boolean; message: string };
 
@@ -29,7 +30,7 @@ export async function check(vatRequest: VatRequest): Promise<Result> {
                 }
             }
 
-            return { success: true, message: `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. You will be notified when it becomes valid.` };
+            return { success: true, message: `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. We will monitor it for ${vatNumberExpirationDays} days and notify you if it becomes valid (or if the monitoring period expires).` };
         }
     } catch (error) {
         // TODO: recognize more unrecoverable errors

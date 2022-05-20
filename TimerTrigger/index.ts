@@ -46,7 +46,7 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
             context.log(`ERROR, removing VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} from validation queue: ${error.message}`);
             await db.removeVatRequest(vatRequest);
             context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
-            await sendTgMessage(vatRequest.telegramChatId, `Sorry, something went wrong and VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' had to be removed from the validation queue.`)
+            await sendTgMessage(vatRequest.telegramChatId, `Sorry, something went wrong we had to stop monitoring the VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'.`)
         }
     }
 };
