@@ -56,6 +56,10 @@ export const getAllVatRequests = async (telegramChatId?: string) => {
     }));
 };
 
+export const countVatRequests = async (telegramChatId: string) => {
+    return await VatRequestModel.countDocuments({ telegramChatId: telegramChatId });
+}
+
 export const removeAllVatRequests = async (telegramChatId: string) => {
     return await VatRequestModel.deleteMany({ telegramChatId: telegramChatId });
 }

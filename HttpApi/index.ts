@@ -3,6 +3,9 @@ import { VatRequest } from "../models";
 import * as db from "../lib/db";
 import * as vies from "../lib/vies";
 
+const { MAX_PENDING_VAT_NUMBERS_PER_USER } = process.env;
+const maxPendingVatNumbersPerUser = parseInt(MAX_PENDING_VAT_NUMBERS_PER_USER);
+
 type Action = "check" | "uncheck" | "uncheckAll" | "list";
 type Result = { success: boolean; message: string };
 
@@ -80,7 +83,13 @@ async function check(vatRequest: VatRequest): Promise<Result> {
             const existingVatRequest = await db.findVatRequest(vatRequest);
 
             if (!existingVatRequest) {
-                await db.addVatRequest(vatRequest);
+                const currentPendingVatNumbers = await db.countVatRequests(vatRequest.telegramChatId);
+
+                if (currentPendingVatNumbers < maxPendingVatNumbersPerUser) {
+                    await db.addVatRequest(vatRequest);
+                } else {
+                    return { success: false, message: `Sorry, you reached the limit of maximum VAT numbers you can monitor (${maxPendingVatNumbersPerUser}).` };
+                }
             }
 
             return { success: true, message: `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. You will be notified when it becomes valid.` };
