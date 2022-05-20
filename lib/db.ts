@@ -22,11 +22,13 @@ export const init = async () => {
 };
 
 export const addVatRequest = async (doc: VatRequest): Promise<void> => {
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + vatNumberExpirationDays);
     const modelToInsert = new VatRequestModel();
     modelToInsert["telegramChatId"] = doc.telegramChatId;
     modelToInsert["countryCode"] = doc.countryCode;
     modelToInsert["vatNumber"] = doc.vatNumber;
-    modelToInsert["expirationDate"] = new Date(new Date().getDate() + vatNumberExpirationDays);
+    modelToInsert["expirationDate"] = expirationDate;
     return await modelToInsert.save();
 };
 
