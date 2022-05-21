@@ -17,6 +17,7 @@ Code is [TypeScript](https://www.typescriptlang.org)/[Node.js](https://nodejs.de
 - **Serverless**: I didn't want to pay for the hosting (serverless is basically free for small workloads) and also wanted to try, well, serverless.
 - **Azure**: because I already have an account and have a bit of familiarity with the ecosystem.
 - **Typescript/Node.js**: quick feedback loop for hacking/exploring solutions, can be deployed on **Azure**.
+- **MongoDB**: supported by **Azure**, low effort deployment and usage in the context of **Node.js** (especially for such a simple use case).
 - **Telegram**: I use it a lot so wanted to explore implementing bots. Simple solution for providing UI and notifications.
 - **Telegraf**: simple intuitive API.
 
