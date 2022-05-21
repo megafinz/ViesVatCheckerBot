@@ -10,14 +10,14 @@ You can do the same manually here: https://ec.europa.eu/taxation_customs/vies
 
 # How Does It Do That?
 
-Code is [TypeScript](https://www.typescriptlang.org)/[Node.js](https://nodejs.dev) that is intended to be deployed on [Azure Functions](https://azure.microsoft.com/en-us/services/functions/). [Telegraf](https://github.com/telegraf/telegraf) is a framework of choice for handling Telegram bot interactions.
+Code is [TypeScript](https://www.typescriptlang.org)/[Node.js](https://nodejs.dev) that is intended to be deployed on [Azure Functions](https://azure.microsoft.com/en-us/services/functions/). Database is [CosmosDB](https://azure.microsoft.com/en-us/services/cosmos-db/) which is also deployed on Azure (and is accessed through MongoDB APIs). [Telegraf](https://github.com/telegraf/telegraf) is a framework of choice for handling Telegram bot interactions.
 
 ## Why Do I Use What I Use?
 
 - **Serverless**: I didn't want to pay for the hosting (serverless is basically free for small workloads) and also wanted to try, well, serverless.
 - **Azure**: because I already have an account and have a bit of familiarity with the ecosystem.
 - **Typescript/Node.js**: quick feedback loop for hacking/exploring solutions, can be deployed on **Azure**.
-- **MongoDB**: supported by **Azure**, low effort deployment and usage in the context of **Node.js** (especially for such a simple use case).
+- **CosmosDB / MongoDB**: provided by **Azure**, low effort deployment and usage in the context of **Node.js** (especially for such a simple use case).
 - **Telegram**: I use it a lot so wanted to explore implementing bots. Simple solution for providing UI and notifications.
 - **Telegraf**: simple intuitive API.
 
