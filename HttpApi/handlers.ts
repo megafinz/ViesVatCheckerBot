@@ -14,7 +14,7 @@ export async function check(vatRequest: VatRequest): Promise<Result> {
         const result = await vies.checkVatNumber(vatRequest);
 
         if (result.valid) {
-            return { success: true, message: `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is valid.` };
+            return { success: true, message: `🟩 VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is valid.` };
         } else {
             await db.init();
 
@@ -26,19 +26,19 @@ export async function check(vatRequest: VatRequest): Promise<Result> {
                 if (currentPendingVatNumbers < maxPendingVatNumbersPerUser) {
                     await db.addVatRequest(vatRequest);
                 } else {
-                    return { success: false, message: `Sorry, you reached the limit of maximum VAT numbers you can monitor (${maxPendingVatNumbersPerUser}).` };
+                    return { success: false, message: `🟥 Sorry, you reached the limit of maximum VAT numbers you can monitor (${maxPendingVatNumbersPerUser}).` };
                 }
             }
 
-            return { success: true, message: `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. We will monitor it for ${vatNumberExpirationDays} days and notify you if it becomes valid (or if the monitoring period expires).` };
+            return { success: true, message: `⬜️ VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. We will monitor it for ${vatNumberExpirationDays} days and notify you if it becomes valid (or if the monitoring period expires).` };
         }
     } catch (error) {
         // TODO: recognize more unrecoverable errors
         if (error.message?.includes("INVALID_INPUT")) {
-            return { success: false, message: `There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Make sure it is in the correct format. This is the error message that we got from VIES:\n\n${error}.` }
+            return { success: false, message: `🟥 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Make sure it is in the correct format. This is the error message that we got from VIES:\n\n${error}.` }
         } else {
             await db.addVatRequest(vatRequest);
-            return { success: false, message: `There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll keep monitoring it for a while. This is the error message that we got from VIES:\n\n${error}.` };
+            return { success: false, message: `🟨 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll keep monitoring it for a while. This is the error message that we got from VIES:\n\n${error}.` };
         }
     }
 }
