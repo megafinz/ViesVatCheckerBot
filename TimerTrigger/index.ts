@@ -3,6 +3,8 @@ import * as db from "../lib/db";
 import * as vies from "../lib/vies";
 import { sendTgMessage } from "../lib/utils";
 
+const { NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS, TG_ADMIN_CHAT_ID } = process.env;
+
 const timerTrigger: AzureFunction = async function (context: Context): Promise<void> {
     await db.init();
     await vies.init();
@@ -50,6 +52,11 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
 
             context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
             await sendTgMessage(vatRequest.telegramChatId, `🟥 Sorry, something went wrong we had to stop monitoring the VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll investigate what happened and try to resume monitoring. We'll notify you when that happens. Sorry for the inconvenience.`)
+
+            if (NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS && TG_ADMIN_CHAT_ID) {
+                context.log(`Notifying admin by Telegram chat id '${TG_ADMIN_CHAT_ID}'`);
+                await sendTgMessage(TG_ADMIN_CHAT_ID, `🟥 [ADMIN] There was an error while processing VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}': ${error.message}`);
+            }
         }
     }
 };
