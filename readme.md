@@ -23,13 +23,15 @@ Code is [TypeScript](https://www.typescriptlang.org)/[Node.js](https://nodejs.de
 
 ## Implementation Details
 
-There are 3 functions:
+There are 4 functions:
 
 - **TgBotApi**: HTTP Trigger that sets up Telegram webhooks and command handlers upon initialization. Webhook invocations will trigger command handlers which then delegate execution to a different HTTP Trigger: **HttpApi**.
 
 - **HttpApi**: HTTP Trigger that can perform various actions with VAT numbers. This function can store VAT numbers in the MongoDB database and validate them against VIES API.
 
-- **TimerTrigger**: Timer Trigger that checks all pending VAT numbers once an hour and notifies Telegram users when those numbers become valid.
+- **TimerTrigger**: Timer Trigger that checks all pending VAT numbers once an hour and notifies Telegram users when those numbers become valid. If **TimerTrigger** encounters unrecoverable error, it will put the VAT number in question into a separate DB collection (`VatRequestErrors`) which you can use to investigate the source of the issue and maybe re-register the VAT number for monitoring after the issue was resolved.
+
+- **HttpManualErrorResolutionApi**: HTTP Trigger that you can use to manually re-register VAT numbers that encountered unrecoverable errors during validation process.
 
 ## Run/Debug
 
