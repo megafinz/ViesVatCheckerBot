@@ -5,7 +5,7 @@ import { DbError } from "./errors";
 const { MONGODB_CONNECTION_STRING, VAT_NUMBER_EXPIRATION_DAYS } = process.env;
 const vatNumberExpirationDays = parseInt(VAT_NUMBER_EXPIRATION_DAYS);
 
-let db = null;
+let db: typeof import("mongoose") = null;
 
 const VatRequestSchema = new Schema({
     telegramChatId: String,
@@ -144,11 +144,44 @@ export const removeVatRequestErrors = async (doc: VatRequest): Promise<boolean> 
     });
 };
 
+export const promoteErrorToVatRequest = async (vatRequestError: VatRequestError) => {
+    return await dbCall(async () => {
+        return await withTransaction(async () => {
+            await addVatRequest(vatRequestError.vatRequest, vatRequestError.vatRequest.expirationDate);
+            await removeVatRequestErrors(vatRequestError.vatRequest);
+        });
+    });
+};
+
+export const demoteVatRequestToError = async (vatRequest: PendingVatRequest, errorMessage: string) => {
+    return await dbCall(async () => {
+        return await withTransaction(async () => {
+            await removeVatRequest(vatRequest);
+            await addVatRequestError(vatRequest, errorMessage);
+        });
+    });
+};
+
 async function dbCall<TOutput>(fn: () => Promise<TOutput>) {
     // TODO: Polly?
     try {
         return await fn();
     } catch (error) {
         throw new DbError(error.message || JSON.stringify(error));
+    }
+}
+
+async function withTransaction<TOutput>(fn: () => Promise<TOutput>) {
+    const session = await db.startSession();
+    session.startTransaction();
+    try {
+        const result = await fn();
+        await session.commitTransaction();
+        return result;
+    } catch (error) {
+        await session.abortTransaction();
+        throw error;
+    } finally {
+        await session.endSession();
     }
 }

@@ -36,11 +36,7 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
             }
 
             context.log(`ERROR, putting VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} into the error bin`, error);
-
-            // TODO: transaction?
-            await db.removeVatRequest(vatRequest);
-            await db.addVatRequestError(vatRequest, error.message);
-
+            await db.demoteVatRequestToError(vatRequest, error.message);
             context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
             await sendTgMessage(vatRequest.telegramChatId, `🔴 Sorry, something went wrong we had to stop monitoring the VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll investigate what happened and try to resume monitoring. We'll notify you when that happens. Sorry for the inconvenience.`)
 
