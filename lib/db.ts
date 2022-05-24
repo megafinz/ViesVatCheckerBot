@@ -13,7 +13,16 @@ const VatRequestSchema = new Schema({
     expirationDate: Date
 });
 
+const VatRequestErrorSchema = new Schema({
+    telegramChatId: String,
+    countryCode: String,
+    vatNumber: String,
+    expirationDate: String,
+    error: String
+});
+
 const VatRequestModel = model("VatRequest", VatRequestSchema, "VatRequests");
+const VatRequestErrorModel = model("VatRequestError", VatRequestErrorSchema, "VatRequestErrors");
 
 export const init = async () => {
     if (!db) {
@@ -24,11 +33,12 @@ export const init = async () => {
 export const addVatRequest = async (doc: VatRequest): Promise<void> => {
     const expirationDate = new Date();
     expirationDate.setDate(expirationDate.getDate() + vatNumberExpirationDays);
-    const modelToInsert = new VatRequestModel();
-    modelToInsert["telegramChatId"] = doc.telegramChatId;
-    modelToInsert["countryCode"] = doc.countryCode;
-    modelToInsert["vatNumber"] = doc.vatNumber;
-    modelToInsert["expirationDate"] = expirationDate;
+    const modelToInsert = new VatRequestModel({
+        telegramChatId: doc.telegramChatId,
+        countryCode: doc.countryCode,
+        vatNumber: doc.vatNumber,
+        expirationDate: expirationDate
+    });
     return await modelToInsert.save();
 };
 
@@ -71,3 +81,14 @@ export const removeAllVatRequests = async (telegramChatId: string): Promise<bool
     const result = await VatRequestModel.deleteMany({ telegramChatId: telegramChatId });
     return result.acknowledged;
 }
+
+export const addVatRequestError = async (doc: PendingVatRequest, errorMessage: string): Promise<void> => {
+    const modelToInsert = new VatRequestErrorModel({
+        telegramChatId: doc.telegramChatId,
+        countryCode: doc.countryCode,
+        vatNumber: doc.vatNumber,
+        expirationDate: doc.expirationDate,
+        error: errorMessage
+    });
+    return await modelToInsert.save();
+};
