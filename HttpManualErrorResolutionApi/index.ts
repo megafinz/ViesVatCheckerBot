@@ -43,6 +43,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     context.log(`Re-registering the VAT number '${countryCode}${vatNumber}' for monitoring. The error message was: '${vatRequestError.error}'.`);
 
+    // TODO: transaction?
     await db.addVatRequest(vatRequestError.vatRequest, vatRequestError.vatRequest.expirationDate);
     await db.removeVatRequestErrors(vatRequestError.vatRequest);
 

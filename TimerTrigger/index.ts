@@ -47,6 +47,7 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
 
             context.log(`ERROR, putting VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} into the error bin: ${error.message}`);
 
+            // TODO: transaction?
             await db.removeVatRequest(vatRequest);
             await db.addVatRequestError(vatRequest, error.message);
 
