@@ -20,12 +20,12 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
                 context.log(`VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} is valid, removing it from the validation queue`)
                 await db.removeVatRequest(vatRequest);
                 context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
-                await sendTgMessage(vatRequest.telegramChatId, `🟩 Congratulations, VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is now VALID!`);
+                await sendTgMessage(vatRequest.telegramChatId, `🟢 Congratulations, VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is now VALID!`);
             } else if (Date.now() > vatRequest.expirationDate.getTime()) {
                 context.log(`VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} is expired, removing it from the validation queue`);
                 await db.removeVatRequest(vatRequest);
                 context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
-                await sendTgMessage(vatRequest.telegramChatId, `🟥 You VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is no longer monitored because it's still invalid and it's been too long since you registered it. Make sure you entered the right VAT number or that the entity that this VAT number belongs to actually applied for registration in VIES.`);
+                await sendTgMessage(vatRequest.telegramChatId, `🔴 You VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is no longer monitored because it's still invalid and it's been too long since you registered it. Make sure you entered the right VAT number or that the entity that this VAT number belongs to actually applied for registration in VIES.`);
                 break;
             }
         } catch (error) {
@@ -42,11 +42,11 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
             await db.addVatRequestError(vatRequest, error.message);
 
             context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
-            await sendTgMessage(vatRequest.telegramChatId, `🟥 Sorry, something went wrong we had to stop monitoring the VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll investigate what happened and try to resume monitoring. We'll notify you when that happens. Sorry for the inconvenience.`)
+            await sendTgMessage(vatRequest.telegramChatId, `🔴 Sorry, something went wrong we had to stop monitoring the VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll investigate what happened and try to resume monitoring. We'll notify you when that happens. Sorry for the inconvenience.`)
 
             if (NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS && TG_ADMIN_CHAT_ID) {
                 context.log(`Notifying admin by Telegram chat id '${TG_ADMIN_CHAT_ID}'`);
-                await sendTgMessage(TG_ADMIN_CHAT_ID, `🟥 [ADMIN] There was an error while processing VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}': ${error.message}`);
+                await sendTgMessage(TG_ADMIN_CHAT_ID, `🔴🔴🔴 [ADMIN] There was an error while processing VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}': ${error.message}`);
             }
 
             context.res = {
