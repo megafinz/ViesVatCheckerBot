@@ -33,7 +33,6 @@ export async function check(vatRequest: VatRequest): Promise<Result> {
             return { success: true, message: `⬜️ VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. We will monitor it for ${vatNumberExpirationDays} days and notify you if it becomes valid (or if the monitoring period expires).` };
         }
     } catch (error) {
-        // TODO: recognize more unrecoverable errors
         if (error.message?.includes("INVALID_INPUT")) {
             return { success: false, message: `🟥 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Make sure it is in the correct format. This is the error message that we got from VIES:\n\n${error}.` }
         } else {

@@ -1,4 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
+import { parseVatNumber } from "../lib/utils";
 import * as handlers from './handlers';
 
 type Action = "check" | "uncheck" | "uncheckAll" | "list";
@@ -24,18 +25,17 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         switch (action) {
             case "check":
             case "uncheck":
-                let vatNumber: string = req.query.vatNumber || req.body?.vatNumber;
+                const vatNumberString: string = req.query.vatNumber || req.body?.vatNumber;
 
-                if (!vatNumber) {
+                if (!vatNumberString) {
                     result = { success: false, message: "Missing VAT number." };
                     break;
-                } else if (vatNumber.length < 3) {
+                } else if (vatNumberString.length < 3) {
                     result = { success: false, message: "VAT number is in invalid format (expected at least 3 symbols)." };
                     break;
                 }
 
-                const countryCode = vatNumber.substring(0, 2).toUpperCase();
-                vatNumber = vatNumber.substring(2);
+                const { countryCode, vatNumber } = parseVatNumber(vatNumberString);
 
                 const vatRequest = {
                     telegramChatId: telegramChatId,

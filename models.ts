@@ -7,3 +7,8 @@ export interface VatRequest {
 export interface PendingVatRequest extends VatRequest {
     expirationDate: Date;
 }
+
+export interface VatRequestError {
+    vatRequest: PendingVatRequest;
+    error: string;
+}

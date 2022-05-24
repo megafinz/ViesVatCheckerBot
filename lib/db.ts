@@ -1,5 +1,5 @@
 import { Schema, model, connect } from "mongoose";
-import { PendingVatRequest, VatRequest } from "../models";
+import { PendingVatRequest, VatRequest, VatRequestError } from "../models";
 
 const { MONGODB_CONNECTION_STRING, VAT_NUMBER_EXPIRATION_DAYS } = process.env;
 const vatNumberExpirationDays = parseInt(VAT_NUMBER_EXPIRATION_DAYS);
@@ -30,9 +30,11 @@ export const init = async () => {
     }
 };
 
-export const addVatRequest = async (doc: VatRequest): Promise<void> => {
-    const expirationDate = new Date();
-    expirationDate.setDate(expirationDate.getDate() + vatNumberExpirationDays);
+export const addVatRequest = async (doc: VatRequest, expirationDate?: Date): Promise<void> => {
+    if (!expirationDate) {
+        expirationDate = new Date();
+        expirationDate.setDate(expirationDate.getDate() + vatNumberExpirationDays);
+    }
     const modelToInsert = new VatRequestModel({
         telegramChatId: doc.telegramChatId,
         countryCode: doc.countryCode,
@@ -91,4 +93,34 @@ export const addVatRequestError = async (doc: PendingVatRequest, errorMessage: s
         error: errorMessage
     });
     return await modelToInsert.save();
+};
+
+export const findVatRequestError = async (doc: VatRequest): Promise<VatRequestError> => {
+    const result = await VatRequestErrorModel.findOne({
+        telegramChatId: doc.telegramChatId,
+        countryCode: doc.countryCode,
+        vatNumber: doc.vatNumber
+    });
+    if (!result) {
+        return null;
+    }
+    const { error, telegramChatId, countryCode, vatNumber, expirationDate } = result;
+    return {
+        vatRequest: {
+            telegramChatId: telegramChatId,
+            countryCode: countryCode,
+            vatNumber: vatNumber,
+            expirationDate: expirationDate
+        },
+        error: error
+    };
+};
+
+export const removeVatRequestErrors = async (doc: VatRequest): Promise<boolean> => {
+    const result = await VatRequestErrorModel.deleteMany({
+        telegramChatId: doc.telegramChatId,
+        countryCode: doc.countryCode,
+        vatNumber: doc.vatNumber
+    });
+    return result.acknowledged;
 };

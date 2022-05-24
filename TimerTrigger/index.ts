@@ -1,18 +1,7 @@
 import { AzureFunction, Context } from "@azure/functions"
 import * as db from "../lib/db";
 import * as vies from "../lib/vies";
-import { default as axios } from "axios";
-
-const { TG_BOT_TOKEN } = process.env;
-
-async function sendTgMessage(chatId: string, message: string) {
-    const tgUrl = `https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`;
-
-    return await axios.post(tgUrl, {
-        chat_id: chatId,
-        text: message
-    });
-}
+import { sendTgMessage } from "../lib/utils";
 
 const timerTrigger: AzureFunction = async function (context: Context): Promise<void> {
     await db.init();
@@ -37,21 +26,30 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
                 break;
             }
         } catch (error) {
-            // TODO: handle transient errors
-            if (error.message?.includes("MS_UNAVAILABLE")) {
-                context.log("VIES API is unavailable right now");
+            if (error.message?.includes("SERVICE_UNAVAILABLE")) {
+                context.log("VIES API: service unavailable (SERVICE_UNAVAILABLE).");
+                break;
+            } else if (error.message?.includes("MS_UNAVAILABLE")) {
+                context.log(`VIES API: API for country code '${vatRequest.countryCode}' is not available right now (MS_UNAVAILABLE)`);
+                break;
+            } else if (error.message?.includes("MS_MAX_CONCURRENT_REQ")) {
+                context.log(`VIES API: too many concurrent requests for country code '${vatRequest.countryCode}' (MS_MAX_CONCURRENT_REQ).`);
+                break;
+            } else if (error.message?.includes("GLOBAL_MAX_CONCURRENT_REQ")) {
+                context.log("VIES API: too many global concurrent requests (GLOBAL_MAX_CONCURRENT_REQ).");
+                break;
+            } else if (error.message?.includes("TIMEOUT")) {
+                context.log("VIES API: timeout (TIMEOUT).");
                 break;
             }
 
             context.log(`ERROR, putting VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} into the error bin: ${error.message}`);
 
-            // TODO: transaction?
             await db.removeVatRequest(vatRequest);
             await db.addVatRequestError(vatRequest, error.message);
 
-            // TODO.
-            // context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
-            // await sendTgMessage(vatRequest.telegramChatId, `🟥 Sorry, something went wrong we had to stop monitoring the VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'.`)
+            context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
+            await sendTgMessage(vatRequest.telegramChatId, `🟥 Sorry, something went wrong we had to stop monitoring the VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll investigate what happened and try to resume monitoring. We'll notify you when that happens. Sorry for the inconvenience.`)
         }
     }
 };
