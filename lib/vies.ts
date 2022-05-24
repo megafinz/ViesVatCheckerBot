@@ -1,5 +1,6 @@
 import * as soap from "soap";
 import { VatRequest } from "../models";
+import { ViesError } from "./errors";
 
 const { VIES_URL } = process.env;
 
@@ -12,8 +13,10 @@ export const init = async() => {
 };
 
 export const checkVatNumber = async (vatRequest: VatRequest) => {
-    // TODO: handle errors.
-    // TODO: resilience.
-    const result = await vies.checkVatAsync(vatRequest);
-    return result[0];
+    try {
+        const result = await vies.checkVatAsync(vatRequest);
+        return result[0];
+    } catch (error) {
+        throw new ViesError(error.message || JSON.stringify(error));
+    }
 }

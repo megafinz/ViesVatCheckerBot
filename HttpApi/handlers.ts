@@ -1,6 +1,7 @@
 import { VatRequest } from '../models';
 import * as vies from '../lib/vies';
 import * as db from '../lib/db';
+import { DbError, isRecoverableError, ViesError } from '../lib/errors';
 
 const { MAX_PENDING_VAT_NUMBERS_PER_USER, VAT_NUMBER_EXPIRATION_DAYS } = process.env;
 const maxPendingVatNumbersPerUser = parseInt(MAX_PENDING_VAT_NUMBERS_PER_USER);
@@ -33,11 +34,12 @@ export async function check(vatRequest: VatRequest): Promise<Result> {
             return { success: true, message: `⬜️ VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. We will monitor it for ${vatNumberExpirationDays} days and notify you if it becomes valid (or if the monitoring period expires).` };
         }
     } catch (error) {
-        if (error.message?.includes("INVALID_INPUT")) {
-            return { success: false, message: `🟥 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Make sure it is in the correct format. This is the error message that we got from VIES:\n\n${error}.` }
+        if (error instanceof ViesError && error.type === "INVALID_INPUT") {
+            return { success: false, message: `🟥 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Make sure it is in the correct format.` }
+        } else if (isRecoverableError(error)) {
+            return { success: false, message: `🟨 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll keep monitoring it for a while.` };
         } else {
-            await db.addVatRequest(vatRequest);
-            return { success: false, message: `🟨 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll keep monitoring it for a while. This is the error message that we got from VIES:\n\n${error}.` };
+            throw error;
         }
     }
 }

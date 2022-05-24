@@ -2,6 +2,7 @@ import { AzureFunction, Context } from "@azure/functions"
 import * as db from "../lib/db";
 import * as vies from "../lib/vies";
 import { sendTgMessage } from "../lib/utils";
+import { isRecoverableError } from "../lib/errors";
 
 const { NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS, TG_ADMIN_CHAT_ID } = process.env;
 
@@ -28,24 +29,13 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
                 break;
             }
         } catch (error) {
-            if (error.message?.includes("SERVICE_UNAVAILABLE")) {
-                context.log("VIES API: service unavailable (SERVICE_UNAVAILABLE).");
-                break;
-            } else if (error.message?.includes("MS_UNAVAILABLE")) {
-                context.log(`VIES API: API for country code '${vatRequest.countryCode}' is not available right now (MS_UNAVAILABLE)`);
-                break;
-            } else if (error.message?.includes("MS_MAX_CONCURRENT_REQ")) {
-                context.log(`VIES API: too many concurrent requests for country code '${vatRequest.countryCode}' (MS_MAX_CONCURRENT_REQ).`);
-                break;
-            } else if (error.message?.includes("GLOBAL_MAX_CONCURRENT_REQ")) {
-                context.log("VIES API: too many global concurrent requests (GLOBAL_MAX_CONCURRENT_REQ).");
-                break;
-            } else if (error.message?.includes("TIMEOUT")) {
-                context.log("VIES API: timeout (TIMEOUT).");
-                break;
+            if (isRecoverableError(error)) {
+                context.log(error);
+                // TODO: retry?
+                return;
             }
 
-            context.log(`ERROR, putting VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} into the error bin: ${error.message}`);
+            context.log(`ERROR, putting VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} into the error bin`, error);
 
             // TODO: transaction?
             await db.removeVatRequest(vatRequest);
@@ -58,6 +48,11 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
                 context.log(`Notifying admin by Telegram chat id '${TG_ADMIN_CHAT_ID}'`);
                 await sendTgMessage(TG_ADMIN_CHAT_ID, `🟥 [ADMIN] There was an error while processing VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}': ${error.message}`);
             }
+
+            context.res = {
+                status: 500,
+                body: error.message
+            };
         }
     }
 };
