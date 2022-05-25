@@ -8,7 +8,11 @@ let vies = null;
 
 export const init = async() => {
     if (!vies) {
-        vies = await soap.createClientAsync(VIES_URL);
+        try {
+            vies = await soap.createClientAsync(VIES_URL);
+        } catch (error) {
+            throw new ViesError(error.message || JSON.stringify(error));
+        }
     }
 };
 

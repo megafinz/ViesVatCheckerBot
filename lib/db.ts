@@ -27,7 +27,9 @@ const VatRequestErrorModel = model("VatRequestError", VatRequestErrorSchema, "Va
 
 export const init = async () => {
     if (!db) {
-        db = await connect(MONGODB_CONNECTION_STRING);
+        await dbCall(async () => {
+            db = await connect(MONGODB_CONNECTION_STRING);
+        });
     }
 };
 

@@ -8,9 +8,19 @@ const { NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS, TG_ADMIN_CHAT_ID } = process.env;
 
 const timerTrigger: AzureFunction = async function (context: Context): Promise<void> {
     await db.init();
+    context.log("DB initialized");
+
     await vies.init();
+    context.log("VIES API initialized");
 
     const vatRequests = await db.getAllVatRequests();
+
+    if (vatRequests.length === 0) {
+        context.log("There are no VAT requests to process.");
+        return;
+    }
+
+    context.log(`Processing ${vatRequests.length} VAT requests…`);
 
     for (const vatRequest of vatRequests) {
         try {
@@ -51,6 +61,8 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
             };
         }
     }
+
+    context.log(`Successfully processed ${vatRequests.length} VAT requests.`);
 };
 
 export default timerTrigger;
