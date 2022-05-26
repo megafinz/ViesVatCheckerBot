@@ -18,7 +18,10 @@ export const init = async() => {
 
 export const checkVatNumber = async (vatRequest: VatRequest) => {
     try {
-        const result = await vies.checkVatAsync(vatRequest);
+        const result = await vies.checkVatAsync({
+            countryCode: vatRequest.countryCode,
+            vatNumber: vatRequest.vatNumber
+        });
         return result[0];
     } catch (error) {
         throw new ViesError(error.message || JSON.stringify(error));
