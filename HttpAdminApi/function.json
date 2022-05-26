@@ -8,7 +8,8 @@
       "methods": [
         "get",
         "post"
-      ]
+      ],
+      "route": "HttpAdminApi/{action}"
     },
     {
       "type": "http",
@@ -16,5 +17,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/HttpManualErrorResolutionApi/index.js"
+  "scriptFile": "../dist/HttpAdminApi/index.js"
 }

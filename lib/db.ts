@@ -86,7 +86,7 @@ export const getAllVatRequests = async (telegramChatId?: string): Promise<Pendin
             : {}
         );
 
-        return models.map(m => ({
+        return models.map<PendingVatRequest>(m => ({
             telegramChatId: m.telegramChatId,
             countryCode: m.countryCode,
             vatNumber: m.vatNumber,
@@ -155,7 +155,7 @@ export const removeVatRequestErrors = async (doc: VatRequest): Promise<boolean> 
     });
 };
 
-export const promoteErrorToVatRequest = async (vatRequestError: VatRequestError) => {
+export const promoteErrorToVatRequest = async (vatRequestError: VatRequestError): Promise<void> => {
     return await dbCall(async () => {
         return await withTransaction(async () => {
             await addVatRequest(vatRequestError.vatRequest, vatRequestError.vatRequest.expirationDate);
@@ -164,12 +164,27 @@ export const promoteErrorToVatRequest = async (vatRequestError: VatRequestError)
     });
 };
 
-export const demoteVatRequestToError = async (vatRequest: PendingVatRequest, errorMessage: string) => {
+export const demoteVatRequestToError = async (vatRequest: PendingVatRequest, errorMessage: string): Promise<void> => {
     return await dbCall(async () => {
         return await withTransaction(async () => {
             await removeVatRequest(vatRequest);
             await addVatRequestError(vatRequest, errorMessage);
         });
+    });
+};
+
+export const getAllVatRequestErrors = async (): Promise<VatRequestError[]> => {
+    return await dbCall(async () => {
+        const models = await VatRequestErrorModel.find({});
+        return models.map<VatRequestError>(m => ({
+            vatRequest: {
+                telegramChatId: m.telegramChatId,
+                countryCode: m.countryCode,
+                vatNumber: m.vatNumber,
+                expirationDate: m.expirationDate
+            },
+            error: m.error
+        }));
     });
 };
 
