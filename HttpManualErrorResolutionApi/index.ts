@@ -32,6 +32,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         vatNumber: vatNumber
     };
 
+    await db.init();
+
     const vatRequestError = await db.findVatRequestError(vatRequest);
 
     if (!vatRequestError) {
