@@ -49,6 +49,15 @@ export const addVatRequest = async (doc: VatRequest, expirationDate?: Date): Pro
     });
 };
 
+export const tryAddUniqueVatRequest = async (doc: VatRequest, expirationDate?: Date): Promise<boolean> => {
+    const existingVatRequest = await findVatRequest(doc);
+    if (existingVatRequest) {
+        return false;
+    }
+    await addVatRequest(doc, expirationDate);
+    return true;
+}
+
 export const findVatRequest = async (doc: VatRequest): Promise<PendingVatRequest> => {
     return await dbCall(async () => {
         return await VatRequestModel.findOne({

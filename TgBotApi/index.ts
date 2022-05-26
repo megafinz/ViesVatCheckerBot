@@ -23,7 +23,7 @@ bot.command("check", async ctx => {
             console.log("Check success");
         } catch (error) {
             ctx.reply(error.response.data);
-            console.log("Check failure", error);
+            console.log("Check failure", error.response.data);
         }
     }
 });
@@ -44,7 +44,7 @@ bot.command("uncheck", async ctx => {
             console.log("Uncheck success");
         } catch (error) {
             ctx.reply(error.response.data);
-            console.log("Uncheck failure", error);
+            console.log("Uncheck failure", error.response.data);
         }
     }
 });
@@ -56,7 +56,7 @@ bot.command("uncheckall", async ctx => {
         console.log("UncheckAll success");
     } catch (error) {
         ctx.reply(error.response.data);
-        console.log("UncheckAll failure", error);
+        console.log("UncheckAll failure", error.response.data);
     }
 });
 
@@ -67,7 +67,7 @@ bot.command("list", async ctx => {
         console.log("List success");
     } catch (error) {
         ctx.reply(error.response.data);
-        console.log("List failure", error);
+        console.log("List failure", error.response.data);
     }
 });
 

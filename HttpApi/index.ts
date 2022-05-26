@@ -15,62 +15,58 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const telegramChatId = req.query.telegramChatId || req.body?.telegramChatId;
     const action = <Action>req.params.action;
 
-    try {
-        let result: handlers.Result = null;
+    let result: handlers.Result = null;
 
-        if (!telegramChatId) {
-            result = { success: false, message: "Missing Telegram Chat ID" };
-        } else if (!allowedActions.includes(action)) {
-            result = { success: false, message: `Missing or invalid action (should be one of the following: ${allowedActions.join(", ")})` };
-        } else {
-            switch (action) {
-                case "check":
-                case "uncheck":
-                    const vatNumberString: string = req.query.vatNumber || req.body?.vatNumber;
+    if (!telegramChatId) {
+        result = { type: "ClientError", message: "Missing Telegram Chat ID" };
+    } else if (!allowedActions.includes(action)) {
+        result = { type: "ClientError", message: `Missing or invalid action (should be one of the following: ${allowedActions.join(", ")})` };
+    } else {
+        switch (action) {
+            case "check":
+            case "uncheck":
+                const vatNumberString: string = req.query.vatNumber || req.body?.vatNumber;
 
-                    if (!vatNumberString) {
-                        result = { success: false, message: "Missing VAT number." };
-                        break;
-                    } else if (vatNumberString.length < 3) {
-                        result = { success: false, message: "VAT number is in invalid format (expected at least 3 symbols)." };
-                        break;
-                    }
-
-                    const { countryCode, vatNumber } = parseVatNumber(vatNumberString);
-
-                    const vatRequest = {
-                        telegramChatId: telegramChatId,
-                        countryCode: countryCode,
-                        vatNumber: vatNumber
-                    };
-
-                    result = action === 'check'
-                        ? await handlers.check(vatRequest)
-                        : await handlers.uncheck(vatRequest);
+                if (!vatNumberString) {
+                    result = { type: "ClientError", message: "Missing VAT number." };
                     break;
-
-                case "uncheckAll":
-                    result = await handlers.uncheckAll(telegramChatId);
+                } else if (vatNumberString.length < 3) {
+                    result = { type: "ClientError", message: "VAT number is in invalid format (expected at least 3 symbols)." };
                     break;
+                }
 
-                case "list":
-                    result = await handlers.list(telegramChatId);
-                    break;
-            }
+                const { countryCode, vatNumber } = parseVatNumber(vatNumberString);
 
-            context.log(result.message);
+                const vatRequest = {
+                    telegramChatId: telegramChatId,
+                    countryCode: countryCode,
+                    vatNumber: vatNumber
+                };
 
-            context.res = {
-                status: result.success ? 200 : 400,
-                body: result.message
-            };
+                result = action === 'check'
+                    ? await handlers.check(vatRequest)
+                    : await handlers.uncheck(vatRequest);
+                break;
+
+            case "uncheckAll":
+                result = await handlers.uncheckAll(telegramChatId);
+                break;
+
+            case "list":
+                result = await handlers.list(telegramChatId);
+                break;
         }
-    } catch (error) {
-        context.log("[ERROR]", error);
+
+        context.log(result.message);
+
+        if ((result.type === "ClientError" || result.type === "ServerError") && result.error) {
+            context.log(result.error);
+        }
+
         context.res = {
-            status: 500,
-            body: "🟥 We're having some technical difficulties processing your request, please try again later."
-        }
+            status: result.type === "Success" ? 200 : result.type === "ClientError" ? 400 : 500,
+            body: result.message
+        };
     }
 };
 
