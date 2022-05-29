@@ -51,7 +51,7 @@ export async function resolveError(context: Context, req: HttpRequest) {
     if (!vatRequestError) {
         const message = `No errors found for VAT number '${countryCode}${vatNumber}'.`;
         context.log(message);
-        context.res = { body: message };
+        context.res = { status: 404, body: message };
         return;
     }
 
