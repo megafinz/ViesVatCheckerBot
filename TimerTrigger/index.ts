@@ -48,7 +48,7 @@ const timerTrigger: AzureFunction = async function (context: Context): Promise<v
             context.log(`ERROR, putting VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} into the error bin`, error);
             await db.demoteVatRequestToError(vatRequest, error.message);
             context.log(`Notifying Telegram User by chat id '${vatRequest.telegramChatId}'`);
-            await sendTgMessage(vatRequest.telegramChatId, `🔴 Sorry, something went wrong we had to stop monitoring the VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll investigate what happened and try to resume monitoring. We'll notify you when that happens. Sorry for the inconvenience.`)
+            await sendTgMessage(vatRequest.telegramChatId, `🔴 Sorry, something went wrong and we had to stop monitoring the VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll investigate what happened and try to resume monitoring. We'll notify you when that happens. Sorry for the inconvenience.`)
 
             if (NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS && TG_ADMIN_CHAT_ID) {
                 context.log(`Notifying admin by Telegram chat id '${TG_ADMIN_CHAT_ID}'`);
