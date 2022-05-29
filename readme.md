@@ -82,3 +82,7 @@ When you register an entity in EU, chances are that you need to be registered in
 ## Alternative Use Case
 
 You need to verify that some other entity has a valid VAT number for transactions within EU.
+
+# Anything Else Worth Looking At?
+
+Simple admin portal app that will allow you to resolve errors more conveniently than calling the admin API by hand: https://github.com/megafinz/ViesVatCheckerBotAdminPortal.
