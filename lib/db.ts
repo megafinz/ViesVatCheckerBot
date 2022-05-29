@@ -144,7 +144,7 @@ export const findVatRequestError = async (doc: VatRequest): Promise<VatRequestEr
     });
 };
 
-export const removeVatRequestErrors = async (doc: VatRequest): Promise<boolean> => {
+export const removeVatRequestError = async (doc: VatRequest): Promise<boolean> => {
     return await dbCall(async () => {
         const result = await VatRequestErrorModel.deleteMany({
             telegramChatId: doc.telegramChatId,
@@ -159,7 +159,7 @@ export const promoteErrorToVatRequest = async (vatRequestError: VatRequestError)
     return await dbCall(async () => {
         return await withTransaction(async () => {
             await addVatRequest(vatRequestError.vatRequest, vatRequestError.vatRequest.expirationDate);
-            await removeVatRequestErrors(vatRequestError.vatRequest);
+            await removeVatRequestError(vatRequestError.vatRequest);
         });
     });
 };

@@ -1,6 +1,7 @@
 import { Context, HttpRequest } from "@azure/functions";
 import * as db from "../lib/db";
 import { parseVatNumber, sendTgMessage } from "../lib/utils";
+import { VatRequestError } from "../models";
 
 export async function list(context: Context) {
     context.res = {
@@ -55,15 +56,37 @@ export async function resolveError(context: Context, req: HttpRequest) {
         return;
     }
 
-    context.log(`Re-registering the VAT number '${countryCode}${vatNumber}' for monitoring. The error message was: '${vatRequestError.error}'.`);
-
-    await db.promoteErrorToVatRequest(vatRequestError);
-
-    if (!silent) {
-        await sendTgMessage(vatRequest.telegramChatId, `We resumed monitoring your VAT number '${countryCode}${vatNumber}'.`);
-    }
+    await promoteErrorToVatRequest(context, vatRequestError, silent);
 
     context.res = {
         body: `VAT number '${countryCode}${vatNumber}' has been re-registered for monitoring.`
     };
+}
+
+export async function resolveAllErrors(context: Context, req: HttpRequest) {
+    const silent = req.query.silent || req.body?.silent || false;
+
+    await db.init();
+
+    const vatRequestErrors = await db.getAllVatRequestErrors();
+
+    for (const vatRequestError of vatRequestErrors) {
+        await promoteErrorToVatRequest(context, vatRequestError, silent);
+    }
+
+    context.res = {
+        body: `All faulted VAT Numbers have been re-registered for monitoring.`
+    };
+}
+
+async function promoteErrorToVatRequest(context: Context, vatRequestError: VatRequestError, silent: boolean) {
+    const vatNumber = `${vatRequestError.vatRequest.countryCode}${vatRequestError.vatRequest.vatNumber}`;
+
+    context.log(`Re-registering the VAT number '${vatNumber}' for monitoring. The error message was: '${vatRequestError.error}'.`);
+
+    await db.promoteErrorToVatRequest(vatRequestError);
+
+    if (!silent) {
+        await sendTgMessage(vatRequestError.vatRequest.telegramChatId, `We resumed monitoring your VAT number '${vatNumber}'.`);
+    }
 }

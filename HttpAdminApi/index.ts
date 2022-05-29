@@ -1,9 +1,9 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions";
 import * as db from "../lib/db";
-import { list, listErrors, resolveError } from "./handlers";
+import { list, listErrors, resolveError, resolveAllErrors } from "./handlers";
 
-type Action = "list" | "listErrors" | "resolveError";
-const allowedActions: Action[] = [ "list", "listErrors", "resolveError" ];
+type Action = "list" | "listErrors" | "resolveError" | "resolveAllErrors";
+const allowedActions: Action[] = [ "list", "listErrors", "resolveError", "resolveAllErrors" ];
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const action = <Action>req.params.action;
@@ -29,6 +29,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         case "resolveError":
             await resolveError(context, req);
+            return;
+
+        case "resolveAllErrors":
+            await resolveAllErrors(context, req);
             return;
     }
 };
