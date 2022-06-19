@@ -1,7 +1,6 @@
 import { Context, HttpRequest } from "@azure/functions";
 import * as db from "../lib/db";
-import { parseVatNumber, sendTgMessage } from "../lib/utils";
-import { VatRequestError } from "../models";
+import { sendTgMessage } from "../lib/utils";
 
 export async function list(context: Context) {
     context.res = {
@@ -16,49 +15,57 @@ export async function listErrors(context: Context) {
 }
 
 export async function resolveError(context: Context, req: HttpRequest) {
-    const telegramChatId = req.query.telegramChatId || req.body?.telegramChatId;
+    const errorId = req.query.errorId || req.body?.errorId;
     const silent = req.query.silent || req.body?.silent || false;
 
-    if (!telegramChatId) {
+    if (!errorId) {
         context.res = {
             status: 400,
-            body: "Missing Telegram chat ID"
+            body: "Missing VAT Request Error ID"
         };
         return;
     }
 
-    const vatNumberString = req.query.vatNumber || req.body?.vatNumber;
+    const result = await resolve(context, errorId, silent);
 
-    if (!vatNumberString) {
-        context.res = {
-            status: 400,
-            body: "Missing VAT number"
-        };
-        return;
+    switch (result.type) {
+        case "error-not-found":
+            context.res = {
+                status: 404,
+                body: `VAT Request Error with id '${errorId}' not found`
+            };
+            return;
+
+        case "error-resolved":
+            context.res = {
+                status: 204,
+                body: `VAT Request Error with id '${errorId}' has been resolved`
+            };
+            return;
+
+        case "all-errors-resolved":
+            context.res = {
+                status: 204,
+                body: `All VAT Request Errors for VAT Request '${result.vatRequest.countryCode}${result.vatRequest.vatNumber}' have been resolved`
+            };
+            return;
+
+        case "all-errors-resolved-and-vat-request-monitoring-is-resumed":
+            context.res = {
+                status: 204,
+                body: `All VAT Request Errors for Vat Request '${result.vatRequest.countryCode}${result.vatRequest.vatNumber}' have been resolved and VAT Request monitoring has resumed`
+            }
+            return;
+
+        default:
+            const message = "Unexpected resolveError result";
+            context.log(message, JSON.stringify(result));
+            context.res = {
+                status: 500,
+                body: message
+            };
+            return;
     }
-
-    const { countryCode, vatNumber } = parseVatNumber(vatNumberString);
-
-    const vatRequest = {
-        telegramChatId: telegramChatId,
-        countryCode: countryCode,
-        vatNumber: vatNumber
-    };
-
-    const vatRequestError = await db.findVatRequestError(vatRequest);
-
-    if (!vatRequestError) {
-        const message = `No errors found for VAT number '${countryCode}${vatNumber}'.`;
-        context.log(message);
-        context.res = { status: 404, body: message };
-        return;
-    }
-
-    await promoteErrorToVatRequest(context, vatRequestError, silent);
-
-    context.res = {
-        body: `VAT number '${countryCode}${vatNumber}' has been re-registered for monitoring.`
-    };
 }
 
 export async function resolveAllErrors(context: Context, req: HttpRequest) {
@@ -66,22 +73,28 @@ export async function resolveAllErrors(context: Context, req: HttpRequest) {
     const vatRequestErrors = await db.getAllVatRequestErrors();
 
     for (const vatRequestError of vatRequestErrors) {
-        await promoteErrorToVatRequest(context, vatRequestError, silent);
+        await resolve(context, vatRequestError.id, silent);
     }
 
     context.res = {
-        body: `All faulted VAT Numbers have been re-registered for monitoring.`
+        status: 204,
+        body: "All faulted VAT Numbers have been re-registered for monitoring."
     };
 }
 
-async function promoteErrorToVatRequest(context: Context, vatRequestError: VatRequestError, silent: boolean) {
-    const vatNumber = `${vatRequestError.vatRequest.countryCode}${vatRequestError.vatRequest.vatNumber}`;
+async function resolve(context: Context, vatRequestErrorId: string, silent: boolean) {
+    context.log(`Resolving error with id '${vatRequestErrorId}'.`);
 
-    context.log(`Re-registering the VAT number '${vatNumber}' for monitoring. The error message was: '${vatRequestError.error}'.`);
+    const result = await db.resolveVatRequestError(vatRequestErrorId);
 
-    await db.promoteErrorToVatRequest(vatRequestError);
-
-    if (!silent) {
-        await sendTgMessage(vatRequestError.vatRequest.telegramChatId, `We resumed monitoring your VAT number '${vatNumber}'.`);
+    if (!silent && result.type === "all-errors-resolved-and-vat-request-monitoring-is-resumed") {
+        const vatNumber = `${result.vatRequest.countryCode}${result.vatRequest.vatNumber}`;
+        await sendTgMessage(result.vatRequest.telegramChatId, `We resumed monitoring your VAT number '${vatNumber}'.`);
+        context.log(`VAT Request Error with id '${vatRequestErrorId}' has been succesffully resolved.`);
+        context.log(`User with Telegram Chat ID '${result.vatRequest.telegramChatId}' has been notified.`);
+    } else if (result.type !== 'error-not-found') {
+        context.log(`VAT Request Error with id '${vatRequestErrorId}' has been succesffully resolved.`);
     }
+
+    return result;
 }

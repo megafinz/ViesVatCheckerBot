@@ -9,6 +9,7 @@ export interface PendingVatRequest extends VatRequest {
 }
 
 export interface VatRequestError {
+    id: string;
     vatRequest: PendingVatRequest;
     error: string;
 }
