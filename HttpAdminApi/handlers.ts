@@ -45,8 +45,6 @@ export async function resolveError(context: Context, req: HttpRequest) {
         vatNumber: vatNumber
     };
 
-    await db.init();
-
     const vatRequestError = await db.findVatRequestError(vatRequest);
 
     if (!vatRequestError) {
@@ -65,9 +63,6 @@ export async function resolveError(context: Context, req: HttpRequest) {
 
 export async function resolveAllErrors(context: Context, req: HttpRequest) {
     const silent = req.query.silent || req.body?.silent || false;
-
-    await db.init();
-
     const vatRequestErrors = await db.getAllVatRequestErrors();
 
     for (const vatRequestError of vatRequestErrors) {
