@@ -32,6 +32,7 @@ export type ViesErrorType =
     "MS_MAX_CONCURRENT_REQ" |
     "GLOBAL_MAX_CONCURRENT_REQ" |
     "TIMEOUT" |
+    "CONNECTION_ERROR" |
     "INVALID_INPUT";
 
 const RecoverableViesErrorTypes: ViesErrorType[] = [
@@ -39,7 +40,8 @@ const RecoverableViesErrorTypes: ViesErrorType[] = [
     "MS_UNAVAILABLE",
     "MS_MAX_CONCURRENT_REQ",
     "GLOBAL_MAX_CONCURRENT_REQ",
-    "TIMEOUT"
+    "TIMEOUT",
+    "CONNECTION_ERROR"
 ];
 
 const AllViesErrorTypes: ViesErrorType[] = [
@@ -59,6 +61,8 @@ export class ViesError extends BaseError {
         if (!this._type && message?.includes("Unexpected root element of WSDL")) {
             // Likely VIES endoint didn't output valid WSDL because it's down.
             this._type = "SERVICE_UNAVAILABLE";
+        } else if (!this._type && message?.includes("ECONNRESET")) {
+            this._type = "CONNECTION_ERROR";
         }
     }
 
