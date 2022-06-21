@@ -1,9 +1,9 @@
 import { expect } from 'chai';
 import * as db from '../lib/db';
-import testContext from './test-context';
+import * as testContext from './test-context';
 import * as testDb from './test-db';
 import * as testTg from './test-tg';
-import httpAdminApi from '../HttpAdminApi/index';
+import httpAdminApi from '../HttpAdminApi';
 import { PendingVatRequest } from '../models';
 
 const fakeVatRequest1: PendingVatRequest = {
@@ -27,14 +27,14 @@ describe('HTTP Admin API Tests', () => {
 
     it('Unsupported action should result in 400', async () => {
         // Act.
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             params: {
                 action: 'unknown'
             }
         });
 
         // Assert.
-        expect(testContext.res?.status).to.equal(400);
+        expect(testContext.context.res?.status).to.equal(400);
     });
 
     it(`'list' action should return a list of all VAT requests`, async () => {
@@ -42,14 +42,14 @@ describe('HTTP Admin API Tests', () => {
         await db.addVatRequest(fakeVatRequest1, new Date(0));
 
         // Act.
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             params: {
                 action: 'list'
             }
         });
 
         // Assert.
-        const vatNumbers = testContext.res?.body;
+        const vatNumbers = testContext.context.res?.body;
         expect(vatNumbers).to.eql([ fakeVatRequest1 ]);
     });
 
@@ -58,23 +58,20 @@ describe('HTTP Admin API Tests', () => {
         const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
 
         // Act.
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             params: {
                 action: 'listErrors'
             }
         });
 
         // Assert.
-        const vatRequestErrors = testContext.res?.body;
+        const vatRequestErrors = testContext.context.res?.body;
         expect(vatRequestErrors).to.eql([ error1 ]);
     });
 
     it(`'resolveError' action should result in 400 if 'errorId' param is missing`, async () => {
-        // Arrange.
-        testDb.init();
-
         // Act.
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             query: {},
             params: {
                 action: 'resolveError'
@@ -82,16 +79,13 @@ describe('HTTP Admin API Tests', () => {
         });
 
         // Assert.
-        expect(testContext.res.status).to.equal(400);
-        expect(testContext.res.body).to.equal('Missing VAT Request Error ID');
+        expect(testContext.context.res.status).to.equal(400);
+        expect(testContext.context.res.body).to.equal('Missing VAT Request Error ID');
     });
 
     it(`'resolveError' action should result in 404 if there is no such error`, async () => {
-        // Arrange.
-        testDb.init();
-
         // Act.
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             query: {
                 errorId: 'xxx'
             },
@@ -101,8 +95,8 @@ describe('HTTP Admin API Tests', () => {
         });
 
         // Assert.
-        expect(testContext.res.status).to.equal(404);
-        expect(testContext.res.body).to.equal(`VAT Request Error with id 'xxx' not found`);
+        expect(testContext.context.res.status).to.equal(404);
+        expect(testContext.context.res.body).to.equal(`VAT Request Error with id 'xxx' not found`);
     });
 
     it(`'resolveError' action should remove specific error from db`, async () => {
@@ -111,7 +105,7 @@ describe('HTTP Admin API Tests', () => {
         const error2 = await db.addVatRequestError(fakeVatRequest1, 'Oops2');
 
         // Act.
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             query: {
                 errorId: error1.id
             },
@@ -121,7 +115,7 @@ describe('HTTP Admin API Tests', () => {
         });
 
         // Assert.
-        expect(testContext.res.status).to.equal(204);
+        expect(testContext.context.res.status).to.equal(204);
         const vatRequestErrors = await db.getAllVatRequestErrors();
         expect(vatRequestErrors).to.eql([ error2 ]);
     });
@@ -132,7 +126,7 @@ describe('HTTP Admin API Tests', () => {
         const error2 = await db.addVatRequestError(fakeVatRequest1, 'Oops2');
 
         // Act.
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             query: {
                 errorId: error1.id,
                 silent: true
@@ -142,7 +136,7 @@ describe('HTTP Admin API Tests', () => {
             }
         });
 
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             query: {
                 errorId: error2.id,
                 silent: true
@@ -153,11 +147,11 @@ describe('HTTP Admin API Tests', () => {
         });
 
         // Assert.
-        expect(testContext.res.status).to.equal(204);
+        expect(testContext.context.res.status).to.equal(204);
         const vatRequests = await db.getAllVatRequests();
         expect(vatRequests).to.eql([ fakeVatRequest1 ]);
         const vatRequestErrors = await db.getAllVatRequestErrors();
-        expect(vatRequestErrors).to.be.of.length(0);
+        expect(vatRequestErrors).to.be.empty;
     });
 
     it(`'resolveError' action should not add VAT Request back to db if it's already there`, async () => {
@@ -166,7 +160,7 @@ describe('HTTP Admin API Tests', () => {
         const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
 
         // Act.
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             query: {
                 errorId: error1.id,
                 silent: true
@@ -177,7 +171,7 @@ describe('HTTP Admin API Tests', () => {
         });
 
         // Assert.
-        expect(testContext.res.status).to.equal(204);
+        expect(testContext.context.res.status).to.equal(204);
         const vatRequests = await db.getAllVatRequests();
         expect(vatRequests).to.eql([ fakeVatRequest1 ]);
     });
@@ -193,7 +187,7 @@ describe('HTTP Admin API Tests', () => {
         });
 
         // Act.
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             query: {
                 errorId: error1.id
             },
@@ -213,7 +207,7 @@ describe('HTTP Admin API Tests', () => {
         await db.addVatRequestError(fakeVatRequest2, 'Oops3');
 
         // Act.
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             query: {
                 silent: true
             },
@@ -224,7 +218,7 @@ describe('HTTP Admin API Tests', () => {
 
         // Assert.
         const vatRequestErrors = await db.getAllVatRequestErrors();
-        expect(vatRequestErrors).to.be.of.length(0);
+        expect(vatRequestErrors).to.be.empty;
     });
 
     it(`'resolveAllErrors' should add faulted VAT Requests back to db`, async () => {
@@ -234,7 +228,7 @@ describe('HTTP Admin API Tests', () => {
         await db.addVatRequestError(fakeVatRequest2, 'Oops3');
 
         // Act.
-        await httpAdminApi(testContext, {
+        await httpAdminApi(testContext.context, {
             query: {
                 silent: true
             },
@@ -249,6 +243,7 @@ describe('HTTP Admin API Tests', () => {
     });
 
     afterEach(async () => {
+        testContext.tearDown();
         testTg.tearDown();
         await testDb.clear();
     });

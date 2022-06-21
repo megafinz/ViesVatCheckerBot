@@ -4,8 +4,8 @@ import * as db from '../lib/db';
 import { ViesError } from '../lib/errors';
 
 const { MAX_PENDING_VAT_NUMBERS_PER_USER, VAT_NUMBER_EXPIRATION_DAYS } = process.env;
-const maxPendingVatNumbersPerUser = parseInt(MAX_PENDING_VAT_NUMBERS_PER_USER);
-const vatNumberExpirationDays = parseInt(VAT_NUMBER_EXPIRATION_DAYS);
+const maxPendingVatNumbersPerUser = parseInt(MAX_PENDING_VAT_NUMBERS_PER_USER) || 10;
+const vatNumberExpirationDays = parseInt(VAT_NUMBER_EXPIRATION_DAYS) || 90;
 
 export type Result =
     | { type: "Success", message: string }

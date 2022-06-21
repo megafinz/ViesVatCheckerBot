@@ -2,7 +2,7 @@ import { Context, Logger } from "@azure/functions";
 
 const log = ((..._: any[]) => { }) as Logger;
 
-const testContext: Context = {
+export const context: Context = {
     invocationId: '',
     executionContext: undefined,
     bindings: undefined,
@@ -13,4 +13,6 @@ const testContext: Context = {
     done: function (_?: string | Error, __?: any): void { }
 };
 
-export default testContext;
+export const tearDown = () => {
+    context.res = {};
+}

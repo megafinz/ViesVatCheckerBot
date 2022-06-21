@@ -39,6 +39,15 @@ export const init = async (connectionString: string = MONGODB_CONNECTION_STRING)
     }
 }
 
+export const tearDown = async () => {
+    if (db) {
+        await dbCall(async () => {
+            await db.disconnect();
+        });
+        db = null;
+    }
+}
+
 export const addVatRequest = async (doc: VatRequest, expirationDate?: Date): Promise<PendingVatRequest> => {
     return await dbCall(async () => {
         if (!expirationDate) {

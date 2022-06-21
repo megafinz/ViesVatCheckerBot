@@ -35,7 +35,7 @@ export type ViesErrorType =
     "CONNECTION_ERROR" |
     "INVALID_INPUT";
 
-const RecoverableViesErrorTypes: ViesErrorType[] = [
+export const RecoverableViesErrorTypes: ViesErrorType[] = [
     "SERVICE_UNAVAILABLE",
     "MS_UNAVAILABLE",
     "MS_MAX_CONCURRENT_REQ",
@@ -44,7 +44,7 @@ const RecoverableViesErrorTypes: ViesErrorType[] = [
     "CONNECTION_ERROR"
 ];
 
-const AllViesErrorTypes: ViesErrorType[] = [
+export const AllViesErrorTypes: ViesErrorType[] = [
     ...RecoverableViesErrorTypes,
     "INVALID_INPUT"
 ];

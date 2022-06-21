@@ -20,6 +20,6 @@ export async function clear(): Promise<void> {
 
 export async function tearDown(): Promise<void> {
     await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
+    await db.tearDown();
     await mongoServer.stop();
 }

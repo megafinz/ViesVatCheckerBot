@@ -56,18 +56,18 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 result = await handlers.list(telegramChatId);
                 break;
         }
-
-        context.log(result.message);
-
-        if ((result.type === "ClientError" || result.type === "ServerError") && result.error) {
-            context.log(result.error);
-        }
-
-        context.res = {
-            status: result.type === "Success" ? 200 : result.type === "ClientError" ? 400 : 500,
-            body: result.message
-        };
     }
+
+    context.log(result.message);
+
+    if ((result.type === "ClientError" || result.type === "ServerError") && result.error) {
+        context.log(result.error);
+    }
+
+    context.res = {
+        status: result.type === "Success" ? 200 : result.type === "ClientError" ? 400 : 500,
+        body: result.message
+    };
 };
 
 export default httpTrigger;
