@@ -1,11 +1,12 @@
 import * as sinon from 'sinon';
 import * as utils from '../lib/utils';
 
-export function init(fn?: (chatId: string, message: string) => Promise<void>) {
+export function init(fn?: (chatId: string, message: string) => void) {
   sinon.stub(utils, 'sendTgMessage').callsFake(async (c, m) => {
     if (fn) {
-      await fn(c, m);
+      fn(c, m);
     }
+    return Promise.resolve();
   });
 }
 

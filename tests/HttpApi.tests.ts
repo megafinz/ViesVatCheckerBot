@@ -494,7 +494,7 @@ describe('HTTP API Tests', () => {
   it(`'uncheckAll' action should result in 200 and should not remove any VAT Numbers from db for other Telegram Chat IDs`, async () => {
     // Arrange.
     await db.addVatRequest(fakeVatRequest1);
-    await db.addVatRequest(fakeVatRequest2);
+    const pendingVatRequest = await db.addVatRequest(fakeVatRequest2);
 
     // Act.
     await httpApi(testContext.context, {
@@ -508,11 +508,8 @@ describe('HTTP API Tests', () => {
 
     // Assert.
     expect(testContext.context.res.status).to.equal(200);
-    const vatRequests = (await db.getAllVatRequests()).map(x => {
-      delete x.expirationDate;
-      return x;
-    });
-    expect(vatRequests).to.be.eql([fakeVatRequest2]);
+    const vatRequests = await db.getAllVatRequests();
+    expect(vatRequests).to.be.eql([pendingVatRequest]);
   });
 
   afterEach(async () => {

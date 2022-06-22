@@ -182,7 +182,7 @@ describe('HTTP Admin API Tests', () => {
 
     let telegramChatId = '';
 
-    testTg.init(async chatId => {
+    testTg.init(chatId => {
       telegramChatId = chatId;
     });
 
