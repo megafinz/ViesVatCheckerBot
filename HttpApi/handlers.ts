@@ -2,17 +2,19 @@ import { VatRequest } from '../models';
 import * as vies from '../lib/vies';
 import * as db from '../lib/db';
 import { ViesError } from '../lib/errors';
+import { HttpResponse } from '../lib/http';
 
 const { MAX_PENDING_VAT_NUMBERS_PER_USER, VAT_NUMBER_EXPIRATION_DAYS } = process.env;
 const maxPendingVatNumbersPerUser = parseInt(MAX_PENDING_VAT_NUMBERS_PER_USER) || 10;
 const vatNumberExpirationDays = parseInt(VAT_NUMBER_EXPIRATION_DAYS) || 90;
 
-export type Result =
-  | { type: 'Success', message: string }
-  | { type: 'ClientError', message: string, error?: any }
-  | { type: 'ServerError', message: string, error: any };
+export type HttpApiHandlerBody =
+  | { type: 'success', message: string }
+  | { type: 'error', message: string; error?: any };
 
-export async function check(vatRequest: VatRequest): Promise<Result> {
+export type HttpApiHandlerResponse = HttpResponse<HttpApiHandlerBody>;
+
+export async function check(vatRequest: VatRequest): Promise<HttpApiHandlerResponse> {
   return await handlerCall(async () => {
     try {
       await vies.init();
@@ -22,70 +24,91 @@ export async function check(vatRequest: VatRequest): Promise<Result> {
 
       if (result.valid) {
         await db.removeVatRequest(vatRequest);
-        return { type: 'Success', message: `🟢 VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is valid.` };
+        return ok(`🟢 VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is valid.`);
       } else {
         const currentPendingVatNumbers = await db.countVatRequests(vatRequest.telegramChatId);
 
         if (currentPendingVatNumbers < maxPendingVatNumbersPerUser) {
           await db.tryAddUniqueVatRequest(vatRequest);
         } else {
-          return { type: 'ClientError', message: `🔴 Sorry, you reached the limit of maximum VAT numbers you can monitor (${maxPendingVatNumbersPerUser}).` };
+          return error(400, `🔴 Sorry, you reached the limit of maximum VAT numbers you can monitor (${maxPendingVatNumbersPerUser}).`);
         }
 
-        return { type: 'Success', message: `🕓 VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. We will monitor it for ${vatNumberExpirationDays} days and notify you if it becomes valid (or if the monitoring period expires).` };
+        return ok(`🕓 VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. We will monitor it for ${vatNumberExpirationDays} days and notify you if it becomes valid (or if the monitoring period expires).`);
       }
-    } catch (error) {
-      if (error instanceof ViesError && error.type === 'INVALID_INPUT') {
-        return { type: 'ClientError', message: `🔴 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Make sure it is in the correct format.`, error: error };
-      } else if (error instanceof ViesError && (error.type === 'SERVICE_UNAVAILABLE' || error.type === 'MS_UNAVAILABLE')) {
+    } catch (e) {
+      if (e instanceof ViesError && e.type === 'INVALID_INPUT') {
+        return error(400, `🔴 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Make sure it is in the correct format.`, e);
+      } else if (e instanceof ViesError && (e.type === 'SERVICE_UNAVAILABLE' || e.type === 'MS_UNAVAILABLE')) {
         await db.tryAddUniqueVatRequest(vatRequest);
-        return { type: 'ServerError', message: `🟡 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' (looks like VIES validation service is not available right now). We'll keep monitoring it for a while.`, error: error };
-      } else if (error instanceof ViesError && error.isRecoverable) {
+        return error(500, `🟡 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' (looks like VIES validation service is not available right now). We'll keep monitoring it for a while.`, e);
+      } else if (e instanceof ViesError && e.isRecoverable) {
         await db.tryAddUniqueVatRequest(vatRequest);
-        return { type: 'ServerError', message: `🟡 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll keep monitoring it for a while.`, error: error };
-      } else if (error instanceof ViesError && !error.isRecoverable) {
-        return { type: 'ServerError', message: `🔴 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Looks like VIES validation service is not working as expected. Please try again later.`, error: error };
+        return error(500, `🟡 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll keep monitoring it for a while.`, e);
+      } else if (e instanceof ViesError && !e.isRecoverable) {
+        return error(500, `🔴 There was a problem validating your VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. Looks like VIES validation service is not working as expected. Please try again later.`, e);
       }
 
-      throw error;
+      throw e;
     }
   });
 }
 
-export async function uncheck(vatRequest: VatRequest): Promise<Result> {
+export async function uncheck(vatRequest: VatRequest): Promise<HttpApiHandlerResponse> {
   return await handlerCall(async () => {
     await db.init();
     await db.removeVatRequest(vatRequest);
-    return { type: 'Success', message: `VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is no longer being monitored.` };
+    return ok(`VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is no longer being monitored.`);
   });
 }
 
-export async function list(telegramChatId: string): Promise<Result> {
+export async function list(telegramChatId: string): Promise<HttpApiHandlerResponse> {
   return await handlerCall(async () => {
     await db.init();
 
     const result = await db.getAllVatRequests(telegramChatId);
 
     if (result.length > 0) {
-      return { type: 'Success', message: `You monitor the following VAT numbers:\n\n${result.map(vr => `'${vr.countryCode}${vr.vatNumber}'`).join(', ')}.` };
+      return ok(`You monitor the following VAT numbers:\n\n${result.map(vr => `'${vr.countryCode}${vr.vatNumber}'`).join(', ')}.`);
     } else {
-      return { type: 'Success', message: 'You are not monitoring any VAT numbers.' };
+      return ok('You are not monitoring any VAT numbers.');
     }
   });
 }
 
-export async function uncheckAll(telegramChatId: string): Promise<Result> {
+export async function uncheckAll(telegramChatId: string): Promise<HttpApiHandlerResponse> {
   return await handlerCall(async () => {
     await db.init();
     await db.removeAllVatRequests(telegramChatId);
-    return { type: 'Success', message: 'You no longer monitor any VAT numbers.' };
+    return ok('You no longer monitor any VAT numbers.');
   });
 }
 
-async function handlerCall(fn: () => Promise<Result>): Promise<Result> {
+export function ok(message: string): HttpApiHandlerResponse {
+  return {
+    status: 200,
+    body: {
+      type: 'success',
+      message
+    }
+  };
+}
+
+export function error(status: number, message: string, error?: any): HttpApiHandlerResponse {
+  return {
+    status,
+    body: {
+      type: 'error',
+      message,
+      error
+    }
+  };
+}
+
+async function handlerCall(fn: () => Promise<HttpApiHandlerResponse>): Promise<HttpApiHandlerResponse> {
   try {
     return await fn();
-  } catch (error) {
-    return { type: 'ServerError', message: '🔴 We\'re having some technical difficulties processing your request, please try again later.', error: error };
+  } catch (e) {
+    return error(500, '🔴 We\'re having some technical difficulties processing your request, please try again later.', e);
   }
 }

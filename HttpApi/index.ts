@@ -15,12 +15,12 @@ const httpTrigger: AzureFunction = async function(context: Context, req: HttpReq
   const telegramChatId = req.query.telegramChatId || req.body?.telegramChatId;
   const action = <Action>req.params.action;
 
-  let result: handlers.Result = null;
+  let result: handlers.HttpApiHandlerResponse;
 
   if (!telegramChatId) {
-    result = { type: 'ClientError', message: 'Missing Telegram Chat ID' };
+    result = handlers.error(400, 'Missing Telegram Chat ID');
   } else if (!allowedActions.includes(action)) {
-    result = { type: 'ClientError', message: `Missing or invalid action (should be one of the following: ${allowedActions.join(', ')})` };
+    result = handlers.error(400, `Missing or invalid action (should be one of the following: ${allowedActions.join(', ')})`);
   } else {
     switch (action) {
       case 'check':
@@ -28,10 +28,13 @@ const httpTrigger: AzureFunction = async function(context: Context, req: HttpReq
         const vatNumberString: string = req.query.vatNumber || req.body?.vatNumber;
 
         if (!vatNumberString) {
-          result = { type: 'ClientError', message: 'Missing VAT number.' };
+          result = handlers.error(400, 'Missing VAT number.');
           break;
-        } else if (vatNumberString.length < 3) {
-          result = { type: 'ClientError', message: 'VAT number is in invalid format (expected at least 3 symbols).' };
+        }
+
+        // TODO: use regex as VIES does?
+        if (vatNumberString.length < 3) {
+          result = handlers.error(400, 'VAT number is in invalid format (expected at least 3 symbols).');
           break;
         }
 
@@ -58,15 +61,15 @@ const httpTrigger: AzureFunction = async function(context: Context, req: HttpReq
     }
   }
 
-  context.log(result.message);
+  context.log(result.body.message);
 
-  if ((result.type === 'ClientError' || result.type === 'ServerError') && result.error) {
-    context.log(result.error);
+  if (result.body.type === 'error' && result.body.error) {
+    context.log(result.body.error);
   }
 
   context.res = {
-    status: result.type === 'Success' ? 200 : result.type === 'ClientError' ? 400 : 500,
-    body: result.message
+    status: result.status,
+    body: result.body.message
   };
 };
 

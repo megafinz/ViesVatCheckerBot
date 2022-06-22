@@ -7,12 +7,14 @@
     "watch": "tsc -w",
     "prestart": "npm run build",
     "start": "func start",
+    "start:e2e": "nodemon e2e/server.ts",
     "test": "mocha -r ts-node/register --timeout 5000 --exit './tests/*.ts'",
     "lint": "npx eslint **/*.ts"
   },
   "devDependencies": {
     "@azure/functions": "^3.0.0",
     "@types/chai": "^4.3.1",
+    "@types/express": "^4.17.13",
     "@types/mocha": "^9.1.1",
     "@types/node": "^17.0.34",
     "@types/sinon": "^10.0.11",
@@ -29,6 +31,8 @@
   },
   "dependencies": {
     "axios": "^0.27.2",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
     "mongodb-memory-server": "^8.7.0",
     "mongoose": "^6.3.3",
     "soap": "^0.43.0",

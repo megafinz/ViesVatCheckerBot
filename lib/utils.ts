@@ -21,3 +21,7 @@ export function parseVatNumber(vatNumberString: string) {
   const vatNumber = vatNumberString.substring(2);
   return { countryCode, vatNumber };
 }
+
+export interface Logger {
+  (...args: any[]): void;
+}

@@ -1,7 +1,5 @@
 import { Context, Logger } from '@azure/functions';
 
-const log = ((..._: any[]) => { }) as Logger;
-
 export const context: Context = {
   invocationId: '',
   executionContext: undefined,
@@ -9,7 +7,7 @@ export const context: Context = {
   bindingData: undefined,
   traceContext: undefined,
   bindingDefinitions: [],
-  log: log,
+  log: function(..._: any[]) { } as Logger,
   done: (_?: string | Error, __?: any): void => { }
 };
 

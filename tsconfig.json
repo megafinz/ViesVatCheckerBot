@@ -6,5 +6,9 @@
     "rootDir": ".",
     "sourceMap": true,
     "strict": false
-  }
+  },
+  "exclude": [
+    "./e2e",
+    "./tests"
+  ]
 }

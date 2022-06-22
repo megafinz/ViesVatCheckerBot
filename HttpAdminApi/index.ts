@@ -19,21 +19,28 @@ const httpTrigger: AzureFunction = async function(context: Context, req: HttpReq
   await db.init();
 
   switch (action) {
-    case 'list':
-      await list(context);
+    case 'list': {
+      context.res = { ...(await list()) };
       return;
+    }
 
-    case 'listErrors':
-      await listErrors(context);
+    case 'listErrors': {
+      context.res = { ...(await listErrors()) };
       return;
+    }
 
-    case 'resolveError':
-      await resolveError(context, req);
+    case 'resolveError': {
+      const errorId = req.query.errorId || req.body?.errorId;
+      const silent = req.query.silent || req.body?.silent;
+      context.res = { ...(await resolveError(context.log, errorId, silent)) };
       return;
+    }
 
-    case 'resolveAllErrors':
-      await resolveAllErrors(context, req);
+    case 'resolveAllErrors': {
+      const silent = req.query.silent || req.body?.silent;
+      context.res = { ...(await resolveAllErrors(context.log, silent)) };
       return;
+    }
   }
 };
 
