@@ -38,22 +38,19 @@ export async function resolveError(context: Context, req: HttpRequest) {
 
     case 'error-resolved':
       context.res = {
-        status: 204,
-        body: `VAT Request Error with id '${errorId}' has been resolved`
+        status: 204
       };
       return;
 
     case 'all-errors-resolved':
       context.res = {
-        status: 204,
-        body: `All VAT Request Errors for VAT Request '${result.vatRequest.countryCode}${result.vatRequest.vatNumber}' have been resolved`
+        status: 204
       };
       return;
 
     case 'all-errors-resolved-and-vat-request-monitoring-is-resumed':
       context.res = {
-        status: 204,
-        body: `All VAT Request Errors for Vat Request '${result.vatRequest.countryCode}${result.vatRequest.vatNumber}' have been resolved and VAT Request monitoring has resumed`
+        status: 204
       };
       return;
 
