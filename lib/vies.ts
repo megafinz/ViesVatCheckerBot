@@ -1,29 +1,29 @@
-import * as soap from "soap";
-import { VatRequest } from "../models";
-import { ViesError } from "./errors";
+import * as soap from 'soap';
+import { VatRequest } from '../models';
+import { ViesError } from './errors';
 
 const { VIES_URL } = process.env;
 
 let vies = null;
 
-export const init = async() => {
-    if (!vies) {
-        try {
-            vies = await soap.createClientAsync(VIES_URL);
-        } catch (error) {
-            throw new ViesError(error.message || JSON.stringify(error));
-        }
-    }
-};
-
-export const checkVatNumber = async (vatRequest: VatRequest) => {
+export async function init() {
+  if (!vies) {
     try {
-        const result = await vies.checkVatAsync({
-            countryCode: vatRequest.countryCode,
-            vatNumber: vatRequest.vatNumber
-        });
-        return result[0];
+      vies = await soap.createClientAsync(VIES_URL);
     } catch (error) {
-        throw new ViesError(error.message || JSON.stringify(error));
+      throw new ViesError(error.message || JSON.stringify(error));
     }
+  }
+}
+
+export async function checkVatNumber(vatRequest: VatRequest) {
+  try {
+    const result = await vies.checkVatAsync({
+      countryCode: vatRequest.countryCode,
+      vatNumber: vatRequest.vatNumber
+    });
+    return result[0];
+  } catch (error) {
+    throw new ViesError(error.message || JSON.stringify(error));
+  }
 }

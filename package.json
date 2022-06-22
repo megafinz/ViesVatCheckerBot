@@ -7,7 +7,8 @@
     "watch": "tsc -w",
     "prestart": "npm run build",
     "start": "func start",
-    "test": "mocha -r ts-node/register --timeout 5000 --exit './tests/*.ts'"
+    "test": "mocha -r ts-node/register --timeout 5000 --exit './tests/*.ts'",
+    "lint": "npx eslint **/*.ts"
   },
   "devDependencies": {
     "@azure/functions": "^3.0.0",

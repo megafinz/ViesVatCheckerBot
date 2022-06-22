@@ -1,40 +1,40 @@
-import { AzureFunction, Context, HttpRequest } from "@azure/functions";
-import * as db from "../lib/db";
-import { list, listErrors, resolveError, resolveAllErrors } from "./handlers";
+import { AzureFunction, Context, HttpRequest } from '@azure/functions';
+import * as db from '../lib/db';
+import { list, listErrors, resolveError, resolveAllErrors } from './handlers';
 
-type Action = "list" | "listErrors" | "resolveError" | "resolveAllErrors";
-const allowedActions: Action[] = [ "list", "listErrors", "resolveError", "resolveAllErrors" ];
+type Action = 'list' | 'listErrors' | 'resolveError' | 'resolveAllErrors';
+const allowedActions: Action[] = ['list', 'listErrors', 'resolveError', 'resolveAllErrors'];
 
-const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
-    const action = <Action>req.params.action;
+const httpTrigger: AzureFunction = async function(context: Context, req: HttpRequest): Promise<void> {
+  const action = <Action>req.params.action;
 
-    if (!action || !allowedActions.includes(action)) {
-        context.res = {
-            status: 400,
-            body: `Missing or invalid action (should be one of: ${allowedActions.join(", ")})`
-        };
-        return;
-    }
+  if (!action || !allowedActions.includes(action)) {
+    context.res = {
+      status: 400,
+      body: `Missing or invalid action (should be one of: ${allowedActions.join(', ')})`
+    };
+    return;
+  }
 
-    await db.init();
+  await db.init();
 
-    switch (action) {
-        case "list":
-            await list(context);
-            return;
+  switch (action) {
+    case 'list':
+      await list(context);
+      return;
 
-        case "listErrors":
-            await listErrors(context);
-            return;
+    case 'listErrors':
+      await listErrors(context);
+      return;
 
-        case "resolveError":
-            await resolveError(context, req);
-            return;
+    case 'resolveError':
+      await resolveError(context, req);
+      return;
 
-        case "resolveAllErrors":
-            await resolveAllErrors(context, req);
-            return;
-    }
+    case 'resolveAllErrors':
+      await resolveAllErrors(context, req);
+      return;
+  }
 };
 
 export default httpTrigger;

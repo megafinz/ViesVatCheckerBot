@@ -7,248 +7,248 @@ import httpAdminApi from '../HttpAdminApi';
 import { PendingVatRequest } from '../models';
 
 const fakeVatRequest1: PendingVatRequest = {
-    telegramChatId: '123',
-    countryCode: 'AA',
-    vatNumber: '12345678',
-    expirationDate: new Date(0)
-}
+  telegramChatId: '123',
+  countryCode: 'AA',
+  vatNumber: '12345678',
+  expirationDate: new Date(0)
+};
 
 const fakeVatRequest2: PendingVatRequest = {
-    telegramChatId: '456',
-    countryCode: 'BB',
-    vatNumber: '87654321',
-    expirationDate: new Date(0)
-}
+  telegramChatId: '456',
+  countryCode: 'BB',
+  vatNumber: '87654321',
+  expirationDate: new Date(0)
+};
 
 describe('HTTP Admin API Tests', () => {
-    before(async () => {
-        await testDb.init();
+  before(async () => {
+    await testDb.init();
+  });
+
+  it('Unsupported action should result in 400', async () => {
+    // Act.
+    await httpAdminApi(testContext.context, {
+      params: {
+        action: 'unknown'
+      }
     });
 
-    it('Unsupported action should result in 400', async () => {
-        // Act.
-        await httpAdminApi(testContext.context, {
-            params: {
-                action: 'unknown'
-            }
-        });
+    // Assert.
+    expect(testContext.context.res?.status).to.equal(400);
+  });
 
-        // Assert.
-        expect(testContext.context.res?.status).to.equal(400);
+  it(`'list' action should return a list of all VAT requests`, async () => {
+    // Arrange.
+    await db.addVatRequest(fakeVatRequest1, new Date(0));
+
+    // Act.
+    await httpAdminApi(testContext.context, {
+      params: {
+        action: 'list'
+      }
     });
 
-    it(`'list' action should return a list of all VAT requests`, async () => {
-        // Arrange.
-        await db.addVatRequest(fakeVatRequest1, new Date(0));
+    // Assert.
+    const vatNumbers = testContext.context.res?.body;
+    expect(vatNumbers).to.eql([fakeVatRequest1]);
+  });
 
-        // Act.
-        await httpAdminApi(testContext.context, {
-            params: {
-                action: 'list'
-            }
-        });
+  it(`'listErrors' action should return a list of all VAT request errors`, async () => {
+    // Arrange.
+    const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
 
-        // Assert.
-        const vatNumbers = testContext.context.res?.body;
-        expect(vatNumbers).to.eql([ fakeVatRequest1 ]);
+    // Act.
+    await httpAdminApi(testContext.context, {
+      params: {
+        action: 'listErrors'
+      }
     });
 
-    it(`'listErrors' action should return a list of all VAT request errors`, async () => {
-        // Arrange.
-        const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
+    // Assert.
+    const vatRequestErrors = testContext.context.res?.body;
+    expect(vatRequestErrors).to.eql([error1]);
+  });
 
-        // Act.
-        await httpAdminApi(testContext.context, {
-            params: {
-                action: 'listErrors'
-            }
-        });
-
-        // Assert.
-        const vatRequestErrors = testContext.context.res?.body;
-        expect(vatRequestErrors).to.eql([ error1 ]);
+  it(`'resolveError' action should result in 400 if 'errorId' param is missing`, async () => {
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {},
+      params: {
+        action: 'resolveError'
+      }
     });
 
-    it(`'resolveError' action should result in 400 if 'errorId' param is missing`, async () => {
-        // Act.
-        await httpAdminApi(testContext.context, {
-            query: {},
-            params: {
-                action: 'resolveError'
-            }
-        });
+    // Assert.
+    expect(testContext.context.res.status).to.equal(400);
+    expect(testContext.context.res.body).to.equal('Missing VAT Request Error ID');
+  });
 
-        // Assert.
-        expect(testContext.context.res.status).to.equal(400);
-        expect(testContext.context.res.body).to.equal('Missing VAT Request Error ID');
+  it(`'resolveError' action should result in 404 if there is no such error`, async () => {
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        errorId: 'xxx'
+      },
+      params: {
+        action: 'resolveError'
+      }
     });
 
-    it(`'resolveError' action should result in 404 if there is no such error`, async () => {
-        // Act.
-        await httpAdminApi(testContext.context, {
-            query: {
-                errorId: 'xxx'
-            },
-            params: {
-                action: 'resolveError'
-            }
-        });
+    // Assert.
+    expect(testContext.context.res.status).to.equal(404);
+    expect(testContext.context.res.body).to.equal(`VAT Request Error with id 'xxx' not found`);
+  });
 
-        // Assert.
-        expect(testContext.context.res.status).to.equal(404);
-        expect(testContext.context.res.body).to.equal(`VAT Request Error with id 'xxx' not found`);
+  it(`'resolveError' action should remove specific error from db`, async () => {
+    // Arrange.
+    const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
+    const error2 = await db.addVatRequestError(fakeVatRequest1, 'Oops2');
+
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        errorId: error1.id
+      },
+      params: {
+        action: 'resolveError'
+      }
     });
 
-    it(`'resolveError' action should remove specific error from db`, async () => {
-        // Arrange.
-        const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
-        const error2 = await db.addVatRequestError(fakeVatRequest1, 'Oops2');
+    // Assert.
+    expect(testContext.context.res.status).to.equal(204);
+    const vatRequestErrors = await db.getAllVatRequestErrors();
+    expect(vatRequestErrors).to.eql([error2]);
+  });
 
-        // Act.
-        await httpAdminApi(testContext.context, {
-            query: {
-                errorId: error1.id
-            },
-            params: {
-                action: 'resolveError'
-            }
-        });
+  it(`'resolveError' action should add VAT Request back to db if all it's errors are resolved`, async () => {
+    // Arrange.
+    const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
+    const error2 = await db.addVatRequestError(fakeVatRequest1, 'Oops2');
 
-        // Assert.
-        expect(testContext.context.res.status).to.equal(204);
-        const vatRequestErrors = await db.getAllVatRequestErrors();
-        expect(vatRequestErrors).to.eql([ error2 ]);
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        errorId: error1.id,
+        silent: true
+      },
+      params: {
+        action: 'resolveError'
+      }
     });
 
-    it(`'resolveError' action should add VAT Request back to db if all it's errors are resolved`, async () => {
-        // Arrange.
-        const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
-        const error2 = await db.addVatRequestError(fakeVatRequest1, 'Oops2');
-
-        // Act.
-        await httpAdminApi(testContext.context, {
-            query: {
-                errorId: error1.id,
-                silent: true
-            },
-            params: {
-                action: 'resolveError'
-            }
-        });
-
-        await httpAdminApi(testContext.context, {
-            query: {
-                errorId: error2.id,
-                silent: true
-            },
-            params: {
-                action: 'resolveError'
-            }
-        });
-
-        // Assert.
-        expect(testContext.context.res.status).to.equal(204);
-        const vatRequests = await db.getAllVatRequests();
-        expect(vatRequests).to.eql([ fakeVatRequest1 ]);
-        const vatRequestErrors = await db.getAllVatRequestErrors();
-        expect(vatRequestErrors).to.be.empty;
+    await httpAdminApi(testContext.context, {
+      query: {
+        errorId: error2.id,
+        silent: true
+      },
+      params: {
+        action: 'resolveError'
+      }
     });
 
-    it(`'resolveError' action should not add VAT Request back to db if it's already there`, async () => {
-        // Arrange.
-        await db.addVatRequest(fakeVatRequest1, new Date(0));
-        const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
+    // Assert.
+    expect(testContext.context.res.status).to.equal(204);
+    const vatRequests = await db.getAllVatRequests();
+    expect(vatRequests).to.eql([fakeVatRequest1]);
+    const vatRequestErrors = await db.getAllVatRequestErrors();
+    expect(vatRequestErrors).to.be.empty;
+  });
 
-        // Act.
-        await httpAdminApi(testContext.context, {
-            query: {
-                errorId: error1.id,
-                silent: true
-            },
-            params: {
-                action: 'resolveError'
-            }
-        });
+  it(`'resolveError' action should not add VAT Request back to db if it's already there`, async () => {
+    // Arrange.
+    await db.addVatRequest(fakeVatRequest1, new Date(0));
+    const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
 
-        // Assert.
-        expect(testContext.context.res.status).to.equal(204);
-        const vatRequests = await db.getAllVatRequests();
-        expect(vatRequests).to.eql([ fakeVatRequest1 ]);
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        errorId: error1.id,
+        silent: true
+      },
+      params: {
+        action: 'resolveError'
+      }
     });
 
-    it(`'resolveError' action should notify Telegram user if all errors are resolved for the specific VAT Request`, async () => {
-        // Arrange.
-        const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
+    // Assert.
+    expect(testContext.context.res.status).to.equal(204);
+    const vatRequests = await db.getAllVatRequests();
+    expect(vatRequests).to.eql([fakeVatRequest1]);
+  });
 
-        let telegramChatId = '';
+  it(`'resolveError' action should notify Telegram user if all errors are resolved for the specific VAT Request`, async () => {
+    // Arrange.
+    const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
 
-        testTg.init(async (chatId) => {
-            telegramChatId = chatId;
-        });
+    let telegramChatId = '';
 
-        // Act.
-        await httpAdminApi(testContext.context, {
-            query: {
-                errorId: error1.id
-            },
-            params: {
-                action: 'resolveError'
-            }
-        });
-
-        // Assert.
-        expect(telegramChatId).to.be.equal(fakeVatRequest1.telegramChatId);
+    testTg.init(async chatId => {
+      telegramChatId = chatId;
     });
 
-    it(`'resolveAllErrors' action should remove all errors from db`, async () => {
-        // Arrange.
-        await db.addVatRequestError(fakeVatRequest1, 'Oops1');
-        await db.addVatRequestError(fakeVatRequest1, 'Oops2');
-        await db.addVatRequestError(fakeVatRequest2, 'Oops3');
-
-        // Act.
-        await httpAdminApi(testContext.context, {
-            query: {
-                silent: true
-            },
-            params: {
-                action: 'resolveAllErrors'
-            }
-        });
-
-        // Assert.
-        const vatRequestErrors = await db.getAllVatRequestErrors();
-        expect(vatRequestErrors).to.be.empty;
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        errorId: error1.id
+      },
+      params: {
+        action: 'resolveError'
+      }
     });
 
-    it(`'resolveAllErrors' should add faulted VAT Requests back to db`, async () => {
-        // Arrange.
-        await db.addVatRequestError(fakeVatRequest1, 'Oops1');
-        await db.addVatRequestError(fakeVatRequest1, 'Oops2');
-        await db.addVatRequestError(fakeVatRequest2, 'Oops3');
+    // Assert.
+    expect(telegramChatId).to.be.equal(fakeVatRequest1.telegramChatId);
+  });
 
-        // Act.
-        await httpAdminApi(testContext.context, {
-            query: {
-                silent: true
-            },
-            params: {
-                action: 'resolveAllErrors'
-            }
-        });
+  it(`'resolveAllErrors' action should remove all errors from db`, async () => {
+    // Arrange.
+    await db.addVatRequestError(fakeVatRequest1, 'Oops1');
+    await db.addVatRequestError(fakeVatRequest1, 'Oops2');
+    await db.addVatRequestError(fakeVatRequest2, 'Oops3');
 
-        // Assert.
-        const vatRequests = await db.getAllVatRequests();
-        expect(vatRequests).to.eql([ fakeVatRequest1, fakeVatRequest2 ]);
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        silent: true
+      },
+      params: {
+        action: 'resolveAllErrors'
+      }
     });
 
-    afterEach(async () => {
-        testContext.tearDown();
-        testTg.tearDown();
-        await testDb.clear();
+    // Assert.
+    const vatRequestErrors = await db.getAllVatRequestErrors();
+    expect(vatRequestErrors).to.be.empty;
+  });
+
+  it(`'resolveAllErrors' should add faulted VAT Requests back to db`, async () => {
+    // Arrange.
+    await db.addVatRequestError(fakeVatRequest1, 'Oops1');
+    await db.addVatRequestError(fakeVatRequest1, 'Oops2');
+    await db.addVatRequestError(fakeVatRequest2, 'Oops3');
+
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        silent: true
+      },
+      params: {
+        action: 'resolveAllErrors'
+      }
     });
 
-    after(async () => {
-        await testDb.tearDown();
-    });
+    // Assert.
+    const vatRequests = await db.getAllVatRequests();
+    expect(vatRequests).to.eql([fakeVatRequest1, fakeVatRequest2]);
+  });
+
+  afterEach(async () => {
+    testContext.tearDown();
+    testTg.tearDown();
+    await testDb.clear();
+  });
+
+  after(async () => {
+    await testDb.tearDown();
+  });
 });

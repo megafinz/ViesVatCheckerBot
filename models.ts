@@ -1,15 +1,15 @@
 export interface VatRequest {
-    telegramChatId: string;
-    countryCode: string;
-    vatNumber: string;
+  telegramChatId: string;
+  countryCode: string;
+  vatNumber: string;
 }
 
 export interface PendingVatRequest extends VatRequest {
-    expirationDate: Date;
+  expirationDate: Date;
 }
 
 export interface VatRequestError {
-    id: string;
-    vatRequest: PendingVatRequest;
-    error: string;
+  id: string;
+  vatRequest: PendingVatRequest;
+  error: string;
 }
