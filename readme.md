@@ -73,6 +73,20 @@ You can't run this as is.
    - `MAX_PENDING_APP_NUMBERS_PER_USER` should be self-explanatory.
    - `VAT_NUMBER_EXPIRATION_DAYS` defines a period after which VAT number should stop being monitored (to handle the case when it never becomes valid).
 
+## Tests
+
+### Unit Tests
+
+You can run unit tests with `npm run test`. Tests are written with [mocha](https://mochajs.org), [chai](https://www.chaijs.com) and [sinon](https://sinonjs.org).
+
+### E2E
+
+Tests are located in the [Admin Portal](https://github.com/megafinz/ViesVatCheckerBotAdminPortal) repo and are supposed to be executed against the backend running in E2E mode.
+
+E2E mode is just an [express](https://expressjs.com) server reusing the same handlers that are used in Azure Functions APIs + a little extra helpers.
+
+You can run backend in E2E mode with `npm run start:e2e`.
+
 # Why Does It Do That?
 
 ## Main Use Case
