@@ -1,6 +1,7 @@
 import * as db from '../lib/db';
+import * as tg from '../lib/tg';
 import { HttpResponse } from '../lib/http';
-import { Logger, sendTgMessage } from '../lib/utils';
+import { Logger } from '../lib/utils';
 import { PendingVatRequest, VatRequestError } from '../models';
 
 export async function list(): Promise<HttpResponse<PendingVatRequest[]>> {
@@ -81,7 +82,7 @@ async function resolve(log: Logger, vatRequestErrorId: string, silent: boolean) 
 
   if (!silent && result.type === 'all-errors-resolved-and-vat-request-monitoring-is-resumed') {
     const vatNumber = `${result.vatRequest.countryCode}${result.vatRequest.vatNumber}`;
-    await sendTgMessage(result.vatRequest.telegramChatId, `We resumed monitoring your VAT number '${vatNumber}'.`);
+    await tg.sendMessage(result.vatRequest.telegramChatId, `We resumed monitoring your VAT number '${vatNumber}'.`);
     log(`VAT Request Error with id '${vatRequestErrorId}' has been succesffully resolved.`);
     log(`User with Telegram Chat ID '${result.vatRequest.telegramChatId}' has been notified.`);
   } else if (result.type !== 'error-not-found') {

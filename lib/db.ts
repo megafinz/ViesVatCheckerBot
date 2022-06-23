@@ -1,6 +1,7 @@
 import { Schema, model, connect, isValidObjectId } from 'mongoose';
 import { PendingVatRequest, VatRequest, VatRequestError } from '../models';
 import { DbError } from './errors';
+import { addDays } from './utils';
 
 export type ResolveErrorResult =
   | { type: 'error-not-found' }
@@ -51,12 +52,11 @@ export async function tearDown() {
 export async function addVatRequest(doc: VatRequest, expirationDate?: Date): Promise<PendingVatRequest> {
   return await dbCall(async () => {
     if (!expirationDate) {
-      expirationDate = new Date();
-      expirationDate.setDate(expirationDate.getDate() + vatNumberExpirationDays);
+      expirationDate = addDays(new Date(), vatNumberExpirationDays);
     }
     const modelToInsert = new VatRequestModel({
       ...doc,
-      expirationDate: expirationDate
+      expirationDate
     });
     const result = await modelToInsert.save();
     return modelToVatRequest(result);
@@ -89,7 +89,7 @@ export async function removeVatRequest(doc: VatRequest): Promise<boolean> {
       countryCode: doc.countryCode,
       vatNumber: doc.vatNumber
     });
-    return result.acknowledged;
+    return result.acknowledged && result.deletedCount > 0;
   });
 }
 
@@ -181,11 +181,14 @@ export async function resolveVatRequestError(vatRequestErrorId: string): Promise
   });
 }
 
-export async function demoteVatRequestToError(vatRequest: PendingVatRequest, errorMessage: string): Promise<VatRequestError> {
+export async function demoteVatRequestToError(vatRequest: PendingVatRequest, errorMessage: string): Promise<VatRequestError | null> {
   return await dbCall(async () => {
     return await withTransaction(async () => {
-      await removeVatRequest(vatRequest);
-      return await addVatRequestError(vatRequest, errorMessage);
+      if (await removeVatRequest(vatRequest)) {
+        return await addVatRequestError(vatRequest, errorMessage);
+      } else {
+        return null;
+      }
     });
   });
 }
