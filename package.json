@@ -7,7 +7,7 @@
     "watch": "tsc -w",
     "prestart": "npm run build",
     "start": "func start",
-    "start:e2e": "nodemon e2e/server.ts",
+    "start:e2e": "nodemon --watch .env -r dotenv/config e2e/server.ts",
     "test": "mocha -r ts-node/register --timeout 5000 --exit './tests/*.ts'",
     "lint": "npx eslint **/*.ts"
   },

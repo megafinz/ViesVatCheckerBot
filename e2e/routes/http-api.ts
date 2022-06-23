@@ -1,4 +1,4 @@
-import { Request, RequestHandler, Router } from 'express';
+import { Request, RequestHandler, Response, Router } from 'express';
 import * as httpApi from '../../HttpApi/handlers';
 import { parseVatNumber } from '../../lib/utils';
 import { VatRequest } from '../../models';
@@ -29,24 +29,24 @@ const validateVatNumber: RequestHandler = async (req, res, next) => {
 
 router.post('/check', validateTelegramChatId, validateVatNumber, async (req, res) => {
   const result = await httpApi.check(getVatRequest(req));
-  res.status(result.status).send(result.body);
+  setRes(res, result);
 });
 
 router.post('/uncheck', validateTelegramChatId, validateVatNumber, async (req, res) => {
   const result = await httpApi.uncheck(getVatRequest(req));
-  res.status(result.status).send(result.body);
+  setRes(res, result);
 });
 
 router.post('/list', async (req, res) => {
   const telegramChatId = req.query.telegramChatId || req.body?.telegramChatId;
   const result = await httpApi.list(telegramChatId);
-  res.status(result.status).send(result.body);
+  setRes(res, result);
 });
 
 router.post('/uncheckAll', async (req, res) => {
   const telegramChatId = req.query.telegramChatId || req.body?.telegramChatId;
   const result = await httpApi.uncheckAll(telegramChatId);
-  res.status(result.status).send(result.body);
+  setRes(res, result);
 });
 
 function getVatRequest(req: Request): VatRequest {
@@ -58,6 +58,13 @@ function getVatRequest(req: Request): VatRequest {
     countryCode,
     vatNumber
   };
+}
+
+function setRes(res: Response, handlerRes: httpApi.HttpApiHandlerResponse) {
+  if (handlerRes.body.type === 'error' && handlerRes.body.error) {
+    console.log(handlerRes.body.error);
+  }
+  res.status(handlerRes.status).send(handlerRes.body.message);
 }
 
 export default router;
