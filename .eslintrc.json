@@ -18,6 +18,9 @@
     "arrow-parens": ["error", "as-needed"],
     "no-extra-semi": "error",
     "new-cap": ["error", { "capIsNewExceptions": ["Router"] }],
-    "no-unused-vars": ["error", { "varsIgnorePattern": "_" }]
+    "no-unused-vars": [
+      "error",
+      { "varsIgnorePattern": "_", "argsIgnorePattern": "^_" }
+    ]
   }
 }
