@@ -79,8 +79,10 @@ describe('HTTP Admin API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(400);
-    expect(testContext.context.res.body).to.equal('Missing VAT Request Error ID');
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.equal(
+      'Missing VAT Request Error ID'
+    );
   });
 
   it(`'resolveError' action should result in 404 if there is no such error`, async () => {
@@ -95,8 +97,10 @@ describe('HTTP Admin API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(404);
-    expect(testContext.context.res.body).to.equal(`VAT Request Error with id 'xxx' not found`);
+    expect(testContext.context.res?.status).to.equal(404);
+    expect(testContext.context.res?.body).to.equal(
+      `VAT Request Error with id 'xxx' not found`
+    );
   });
 
   it(`'resolveError' action should remove specific error from db`, async () => {
@@ -115,7 +119,7 @@ describe('HTTP Admin API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(204);
+    expect(testContext.context.res?.status).to.equal(204);
     const vatRequestErrors = await db.getAllVatRequestErrors();
     expect(vatRequestErrors).to.eql([error2]);
   });
@@ -147,7 +151,7 @@ describe('HTTP Admin API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(204);
+    expect(testContext.context.res?.status).to.equal(204);
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.eql([fakeVatRequest1]);
     const vatRequestErrors = await db.getAllVatRequestErrors();
@@ -171,7 +175,7 @@ describe('HTTP Admin API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(204);
+    expect(testContext.context.res?.status).to.equal(204);
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.eql([fakeVatRequest1]);
   });

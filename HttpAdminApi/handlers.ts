@@ -18,7 +18,11 @@ export async function listErrors(): Promise<HttpResponse<VatRequestError[]>> {
   };
 }
 
-export async function resolveError(log: Logger, errorId?: string, silent?: boolean): Promise<HttpResponse> {
+export async function resolveError(
+  log: Logger,
+  errorId?: string,
+  silent?: boolean
+): Promise<HttpResponse> {
   silent ??= false;
 
   if (!errorId) {
@@ -75,18 +79,34 @@ export async function resolveAllErrors(log: Logger, silent?: boolean) {
   };
 }
 
-async function resolve(log: Logger, vatRequestErrorId: string, silent: boolean) {
+async function resolve(
+  log: Logger,
+  vatRequestErrorId: string,
+  silent: boolean
+) {
   log(`Resolving error with id '${vatRequestErrorId}'.`);
 
   const result = await db.resolveVatRequestError(vatRequestErrorId);
 
-  if (!silent && result.type === 'all-errors-resolved-and-vat-request-monitoring-is-resumed') {
+  if (
+    !silent &&
+    result.type === 'all-errors-resolved-and-vat-request-monitoring-is-resumed'
+  ) {
     const vatNumber = `${result.vatRequest.countryCode}${result.vatRequest.vatNumber}`;
-    await tg.sendMessage(result.vatRequest.telegramChatId, `We resumed monitoring your VAT number '${vatNumber}'.`);
-    log(`VAT Request Error with id '${vatRequestErrorId}' has been succesffully resolved.`);
-    log(`User with Telegram Chat ID '${result.vatRequest.telegramChatId}' has been notified.`);
+    await tg.sendMessage(
+      result.vatRequest.telegramChatId,
+      `We resumed monitoring your VAT number '${vatNumber}'.`
+    );
+    log(
+      `VAT Request Error with id '${vatRequestErrorId}' has been succesffully resolved.`
+    );
+    log(
+      `User with Telegram Chat ID '${result.vatRequest.telegramChatId}' has been notified.`
+    );
   } else if (result.type !== 'error-not-found') {
-    log(`VAT Request Error with id '${vatRequestErrorId}' has been succesffully resolved.`);
+    log(
+      `VAT Request Error with id '${vatRequestErrorId}' has been succesffully resolved.`
+    );
   }
 
   return result;

@@ -9,7 +9,8 @@
     "start": "func start",
     "start:e2e": "nodemon --watch .env --watch e2e --watch lib --watch HttpAdminApi --watch HttpApi -r dotenv/config e2e/server.ts",
     "test": "mocha -r ts-node/register --timeout 5000 --exit './tests/*.ts'",
-    "lint": "npx eslint **/*.ts"
+    "lint": "npx eslint **/*.ts",
+    "format": "npx prettier --write ."
   },
   "devDependencies": {
     "@azure/functions": "^3.0.0",
@@ -23,8 +24,10 @@
     "chai": "^4.3.6",
     "eslint": "^8.15.0",
     "eslint-config-google": "^0.14.0",
+    "eslint-config-prettier": "^8.8.0",
     "mocha": "^10.0.0",
     "nodemon": "^2.0.22",
+    "prettier": "^2.8.7",
     "sinon": "^14.0.0",
     "ts-node": "^10.7.0",
     "typescript": "^4.0.0"

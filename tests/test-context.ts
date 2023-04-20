@@ -2,13 +2,13 @@ import { Context, Logger } from '@azure/functions';
 
 export const context: Context = {
   invocationId: '',
-  executionContext: undefined,
-  bindings: undefined,
-  bindingData: undefined,
-  traceContext: undefined,
+  executionContext: {} as unknown as any,
+  bindings: {} as unknown as any,
+  bindingData: {} as unknown as any,
+  traceContext: {} as unknown as any,
   bindingDefinitions: [],
-  log: function(..._: any[]) { } as Logger,
-  done: (_?: string | Error, __?: any): void => { }
+  log: function () {} as Logger,
+  done: (): void => {}
 };
 
 export function tearDown() {

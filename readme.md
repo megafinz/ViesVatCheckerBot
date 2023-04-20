@@ -44,6 +44,7 @@ You can't run this as is.
 4. Go to **Azure > Functions** pane, click on **Local Project**'s initialize button.
 5. Go to **Run and Debug** pane and try to run the project. Follow the steps to connect your project to your Azure Account.
 6. Modify `local.settings.json` at the root of the repo. It should contain following settings:
+
 ```json
 {
   "IsEncrypted": false,
@@ -61,6 +62,7 @@ You can't run this as is.
   }
 }
 ```
+
 7. You can now run your functions locally (either through `npm run` or through the VS Code's **Run and Debug** pane).
 8. You can also deploy your functions to Azure using **Azure > Functions** pane.
 9. After you've deployed your functions, you can now update **Azure > Functions > {Your Project} > Application Settings** to contain the same settings that you added to `local.settings.json`:

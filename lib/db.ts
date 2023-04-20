@@ -5,9 +5,12 @@ import { addDays } from './utils';
 
 export type ResolveErrorResult =
   | { type: 'error-not-found' }
-  | { type: 'error-resolved', vatRequest: VatRequest }
-  | { type: 'all-errors-resolved', vatRequest: VatRequest }
-  | { type: 'all-errors-resolved-and-vat-request-monitoring-is-resumed', vatRequest: VatRequest };
+  | { type: 'error-resolved'; vatRequest: VatRequest }
+  | { type: 'all-errors-resolved'; vatRequest: VatRequest }
+  | {
+      type: 'all-errors-resolved-and-vat-request-monitoring-is-resumed';
+      vatRequest: VatRequest;
+    };
 
 const { MONGODB_CONNECTION_STRING, VAT_NUMBER_EXPIRATION_DAYS } = process.env;
 const vatNumberExpirationDays = parseInt(VAT_NUMBER_EXPIRATION_DAYS) || 90;
@@ -28,11 +31,17 @@ const VatRequestErrorSchema = new Schema({
 });
 
 const VatRequestModel = model('VatRequest', VatRequestSchema, 'VatRequests');
-const VatRequestErrorModel = model('VatRequestError', VatRequestErrorSchema, 'VatRequestErrors');
+const VatRequestErrorModel = model(
+  'VatRequestError',
+  VatRequestErrorSchema,
+  'VatRequestErrors'
+);
 
 let db: typeof import('mongoose') = null;
 
-export async function init(connectionString: string = MONGODB_CONNECTION_STRING) {
+export async function init(
+  connectionString: string = MONGODB_CONNECTION_STRING
+) {
   if (!db) {
     await dbCall(async () => {
       db = await connect(connectionString);
@@ -49,7 +58,10 @@ export async function tearDown() {
   }
 }
 
-export async function addVatRequest(doc: VatRequest, expirationDate?: Date): Promise<PendingVatRequest> {
+export async function addVatRequest(
+  doc: VatRequest,
+  expirationDate?: Date
+): Promise<PendingVatRequest> {
   return await dbCall(async () => {
     if (!expirationDate) {
       expirationDate = addDays(new Date(), vatNumberExpirationDays);
@@ -63,7 +75,10 @@ export async function addVatRequest(doc: VatRequest, expirationDate?: Date): Pro
   });
 }
 
-export async function tryAddUniqueVatRequest(doc: VatRequest, expirationDate?: Date): Promise<VatRequest | false> {
+export async function tryAddUniqueVatRequest(
+  doc: VatRequest,
+  expirationDate?: Date
+): Promise<VatRequest | false> {
   const existingVatRequest = await findVatRequest(doc);
   if (existingVatRequest) {
     return false;
@@ -71,7 +86,9 @@ export async function tryAddUniqueVatRequest(doc: VatRequest, expirationDate?: D
   return await addVatRequest(doc, expirationDate);
 }
 
-export async function findVatRequest(doc: VatRequest): Promise<PendingVatRequest> {
+export async function findVatRequest(
+  doc: VatRequest
+): Promise<PendingVatRequest> {
   return await dbCall(async () => {
     const result = await VatRequestModel.findOne({
       telegramChatId: doc.telegramChatId,
@@ -93,30 +110,42 @@ export async function removeVatRequest(doc: VatRequest): Promise<boolean> {
   });
 }
 
-export async function getAllVatRequests(telegramChatId?: string): Promise<PendingVatRequest[]> {
+export async function getAllVatRequests(
+  telegramChatId?: string
+): Promise<PendingVatRequest[]> {
   return await dbCall(async () => {
-    const result = await VatRequestModel.find(telegramChatId ?
-      { telegramChatId: telegramChatId } :
-      {}
+    const result = await VatRequestModel.find(
+      telegramChatId ? { telegramChatId: telegramChatId } : {}
     );
     return result.map(m => modelToVatRequest(m));
   });
 }
 
-export async function countVatRequests(telegramChatId: string): Promise<number> {
+export async function countVatRequests(
+  telegramChatId: string
+): Promise<number> {
   return await dbCall(async () => {
-    return await VatRequestModel.countDocuments({ telegramChatId: telegramChatId });
+    return await VatRequestModel.countDocuments({
+      telegramChatId: telegramChatId
+    });
   });
 }
 
-export async function removeAllVatRequests(telegramChatId: string): Promise<boolean> {
+export async function removeAllVatRequests(
+  telegramChatId: string
+): Promise<boolean> {
   return await dbCall(async () => {
-    const result = await VatRequestModel.deleteMany({ telegramChatId: telegramChatId });
+    const result = await VatRequestModel.deleteMany({
+      telegramChatId: telegramChatId
+    });
     return result.acknowledged;
   });
 }
 
-export async function addVatRequestError(doc: PendingVatRequest, errorMessage: string): Promise<VatRequestError> {
+export async function addVatRequestError(
+  doc: PendingVatRequest,
+  errorMessage: string
+): Promise<VatRequestError> {
   return await dbCall(async () => {
     const modelToInsert = new VatRequestErrorModel({
       telegramChatId: doc.telegramChatId,
@@ -130,7 +159,9 @@ export async function addVatRequestError(doc: PendingVatRequest, errorMessage: s
   });
 }
 
-export async function findVatRequestError(vatRequestErrorId: string): Promise<VatRequestError> {
+export async function findVatRequestError(
+  vatRequestErrorId: string
+): Promise<VatRequestError> {
   if (!isValidObjectId(vatRequestErrorId)) {
     return null;
   }
@@ -140,7 +171,9 @@ export async function findVatRequestError(vatRequestErrorId: string): Promise<Va
   });
 }
 
-export async function countVatRequestErrors(vatRequest: VatRequest): Promise<number> {
+export async function countVatRequestErrors(
+  vatRequest: VatRequest
+): Promise<number> {
   return await dbCall(async () => {
     return await VatRequestErrorModel.countDocuments({
       telegramChatId: vatRequest.telegramChatId,
@@ -150,17 +183,23 @@ export async function countVatRequestErrors(vatRequest: VatRequest): Promise<num
   });
 }
 
-export async function removeVatRequestError(vatRequestErrorId: string): Promise<boolean> {
+export async function removeVatRequestError(
+  vatRequestErrorId: string
+): Promise<boolean> {
   if (!isValidObjectId(vatRequestErrorId)) {
     return false;
   }
   return await dbCall(async () => {
-    const result = await VatRequestErrorModel.findByIdAndDelete(vatRequestErrorId);
+    const result = await VatRequestErrorModel.findByIdAndDelete(
+      vatRequestErrorId
+    );
     return !!result;
   });
 }
 
-export async function resolveVatRequestError(vatRequestErrorId: string): Promise<ResolveErrorResult> {
+export async function resolveVatRequestError(
+  vatRequestErrorId: string
+): Promise<ResolveErrorResult> {
   return await dbCall(async () => {
     return await withTransaction(async () => {
       const vatRequestError = await findVatRequestError(vatRequestErrorId);
@@ -168,20 +207,34 @@ export async function resolveVatRequestError(vatRequestErrorId: string): Promise
         return { type: 'error-not-found' };
       }
       const removed = await removeVatRequestError(vatRequestErrorId);
-      const numberOfRemainingErrors = await countVatRequestErrors(vatRequestError.vatRequest);
+      const numberOfRemainingErrors = await countVatRequestErrors(
+        vatRequestError.vatRequest
+      );
       if (removed && numberOfRemainingErrors === 0) {
-        return await tryAddUniqueVatRequest(vatRequestError.vatRequest, vatRequestError.vatRequest.expirationDate) ?
-          { type: 'all-errors-resolved-and-vat-request-monitoring-is-resumed', vatRequest: vatRequestError.vatRequest } :
-          { type: 'all-errors-resolved', vatRequest: vatRequestError.vatRequest };
+        return (await tryAddUniqueVatRequest(
+          vatRequestError.vatRequest,
+          vatRequestError.vatRequest.expirationDate
+        ))
+          ? {
+              type: 'all-errors-resolved-and-vat-request-monitoring-is-resumed',
+              vatRequest: vatRequestError.vatRequest
+            }
+          : {
+              type: 'all-errors-resolved',
+              vatRequest: vatRequestError.vatRequest
+            };
       }
-      return removed ?
-        { type: 'error-resolved', vatRequest: vatRequestError.vatRequest } :
-        { type: 'error-not-found', vatRequest: vatRequestError.vatRequest };
+      return removed
+        ? { type: 'error-resolved', vatRequest: vatRequestError.vatRequest }
+        : { type: 'error-not-found', vatRequest: vatRequestError.vatRequest };
     });
   });
 }
 
-export async function demoteVatRequestToError(vatRequest: PendingVatRequest, errorMessage: string): Promise<VatRequestError | null> {
+export async function demoteVatRequestToError(
+  vatRequest: PendingVatRequest,
+  errorMessage: string
+): Promise<VatRequestError | null> {
   return await dbCall(async () => {
     return await withTransaction(async () => {
       if (await removeVatRequest(vatRequest)) {

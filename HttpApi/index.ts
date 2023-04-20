@@ -4,14 +4,12 @@ import * as handlers from './handlers';
 
 type Action = 'check' | 'uncheck' | 'uncheckAll' | 'list';
 
-const allowedActions: Action[] = [
-  'check',
-  'uncheck',
-  'uncheckAll',
-  'list'
-];
+const allowedActions: Action[] = ['check', 'uncheck', 'uncheckAll', 'list'];
 
-const httpTrigger: AzureFunction = async function(context: Context, req: HttpRequest): Promise<void> {
+const httpTrigger: AzureFunction = async function (
+  context: Context,
+  req: HttpRequest
+): Promise<void> {
   const telegramChatId = req.query.telegramChatId || req.body?.telegramChatId;
   const action = <Action>req.params.action;
 
@@ -20,12 +18,18 @@ const httpTrigger: AzureFunction = async function(context: Context, req: HttpReq
   if (!telegramChatId) {
     result = handlers.error(400, 'Missing Telegram Chat ID');
   } else if (!allowedActions.includes(action)) {
-    result = handlers.error(400, `Missing or invalid action (should be one of the following: ${allowedActions.join(', ')})`);
+    result = handlers.error(
+      400,
+      `Missing or invalid action (should be one of the following: ${allowedActions.join(
+        ', '
+      )})`
+    );
   } else {
     switch (action) {
       case 'check':
       case 'uncheck':
-        const vatNumberString: string = req.query.vatNumber || req.body?.vatNumber;
+        const vatNumberString: string =
+          req.query.vatNumber || req.body?.vatNumber;
 
         if (!vatNumberString) {
           result = handlers.error(400, 'Missing VAT number.');
@@ -34,7 +38,10 @@ const httpTrigger: AzureFunction = async function(context: Context, req: HttpReq
 
         // TODO: use regex as VIES does?
         if (vatNumberString.length < 3) {
-          result = handlers.error(400, 'VAT number is in invalid format (expected at least 3 symbols).');
+          result = handlers.error(
+            400,
+            'VAT number is in invalid format (expected at least 3 symbols).'
+          );
           break;
         }
 
@@ -46,9 +53,10 @@ const httpTrigger: AzureFunction = async function(context: Context, req: HttpReq
           vatNumber: vatNumber
         };
 
-        result = action === 'check' ?
-          await handlers.check(vatRequest) :
-          await handlers.uncheck(vatRequest);
+        result =
+          action === 'check'
+            ? await handlers.check(vatRequest)
+            : await handlers.uncheck(vatRequest);
         break;
 
       case 'uncheckAll':

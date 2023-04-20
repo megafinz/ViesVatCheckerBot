@@ -7,8 +7,5 @@
     "sourceMap": true,
     "strict": false
   },
-  "exclude": [
-    "./e2e",
-    "./tests"
-  ]
+  "exclude": ["./e2e", "./tests"]
 }

@@ -41,8 +41,8 @@ describe('HTTP API Tests', () => {
     });
 
     // Arrange.
-    expect(testContext.context.res.status).to.equal(400);
-    expect(testContext.context.res.body).to.equal('Missing Telegram Chat ID');
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.equal('Missing Telegram Chat ID');
   });
 
   it('Missing action should result in 400', async () => {
@@ -55,8 +55,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(400);
-    expect(testContext.context.res.body).to.contain('Missing or invalid action');
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.contain(
+      'Missing or invalid action'
+    );
   });
 
   it('Unsupported action should result in 400', async () => {
@@ -71,8 +73,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(400);
-    expect(testContext.context.res.body).to.contain('Missing or invalid action');
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.contain(
+      'Missing or invalid action'
+    );
   });
 
   it(`'check' action without VAT number should result in 400`, async () => {
@@ -87,8 +91,8 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(400);
-    expect(testContext.context.res.body).to.equal('Missing VAT number.');
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.equal('Missing VAT number.');
   });
 
   it(`'check' action with invalid VAT number should result in 400`, async () => {
@@ -104,8 +108,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(400);
-    expect(testContext.context.res.body).to.contain('VAT number is in invalid format');
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.contain(
+      'VAT number is in invalid format'
+    );
   });
 
   it(`'check' action should not add VAT Request to db if it's already valid`, async () => {
@@ -124,7 +130,7 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
+    expect(testContext.context.res?.status).to.equal(200);
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.be.empty;
   });
@@ -146,7 +152,7 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
+    expect(testContext.context.res?.status).to.equal(200);
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.be.empty;
   });
@@ -167,10 +173,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
+    expect(testContext.context.res?.status).to.equal(200);
     const vatRequests = (await db.getAllVatRequests()).map(x => {
-      delete x.expirationDate;
-      return x;
+      const { expirationDate: _, ...rest } = x;
+      return { ...rest };
     });
     expect(vatRequests).to.eql([fakeVatRequest1]);
   });
@@ -191,7 +197,7 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
+    expect(testContext.context.res?.status).to.equal(200);
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.be.of.length(1);
     const now = new Date();
@@ -220,8 +226,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(400);
-    expect(testContext.context.res.body).to.contain('Sorry, you reached the limit of maximum VAT numbers you can monitor');
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.contain(
+      'Sorry, you reached the limit of maximum VAT numbers you can monitor'
+    );
   });
 
   it(`'check' action should not add VAT Request to db if it's already there`, async () => {
@@ -241,7 +249,7 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
+    expect(testContext.context.res?.status).to.equal(200);
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.be.of.length(1);
   });
@@ -264,8 +272,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(400);
-    expect(testContext.context.res.body).to.contain('Make sure it is in the correct format');
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.contain(
+      'Make sure it is in the correct format'
+    );
   });
 
   for (const error of RecoverableViesErrorTypes) {
@@ -287,16 +297,17 @@ describe('HTTP API Tests', () => {
       });
 
       // Assert.
-      expect(testContext.context.res.status).to.equal(500);
-      expect(testContext.context.res.body).to.contain(`We'll keep monitoring it for a while`);
+      expect(testContext.context.res?.status).to.equal(500);
+      expect(testContext.context.res?.body).to.contain(
+        `We'll keep monitoring it for a while`
+      );
       const vatRequests = (await db.getAllVatRequests()).map(x => {
-        delete x.expirationDate;
-        return x;
+        const { expirationDate: _, ...rest } = x;
+        return { ...rest };
       });
       expect(vatRequests).to.eql([fakeVatRequest1]);
     });
   }
-
 
   it(`'check' action should result in 500 and should not add VAT Request to db if VIES replies with unknown error`, async () => {
     // Arrange.
@@ -316,7 +327,7 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(500);
+    expect(testContext.context.res?.status).to.equal(500);
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.be.empty;
   });
@@ -339,8 +350,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(500);
-    expect(testContext.context.res.body).to.contain(`We're having some technical difficulties processing your request, please try again later`);
+    expect(testContext.context.res?.status).to.equal(500);
+    expect(testContext.context.res?.body).to.contain(
+      `We're having some technical difficulties processing your request, please try again later`
+    );
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.be.empty;
   });
@@ -357,8 +370,8 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(400);
-    expect(testContext.context.res.body).to.equal('Missing VAT number.');
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.equal('Missing VAT number.');
   });
 
   it(`'uncheck' action with invalid VAT number should result in 400`, async () => {
@@ -374,8 +387,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(400);
-    expect(testContext.context.res.body).to.contain('VAT number is in invalid format');
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.contain(
+      'VAT number is in invalid format'
+    );
   });
 
   it(`'uncheck' action should result in 400 even if there is nothing to uncheck`, async () => {
@@ -391,8 +406,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
-    expect(testContext.context.res.body).to.contain(`VAT number 'XX123' is no longer being monitored`);
+    expect(testContext.context.res?.status).to.equal(200);
+    expect(testContext.context.res?.body).to.contain(
+      `VAT number 'XX123' is no longer being monitored`
+    );
   });
 
   it(`'uncheck' action should result in 200 and remove VAT Request from db if it's there`, async () => {
@@ -411,7 +428,7 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
+    expect(testContext.context.res?.status).to.equal(200);
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.be.empty;
   });
@@ -431,8 +448,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
-    expect(testContext.context.res.body).to.contain(`${fakeVatRequest1.countryCode}${fakeVatRequest1.vatNumber}`);
+    expect(testContext.context.res?.status).to.equal(200);
+    expect(testContext.context.res?.body).to.contain(
+      `${fakeVatRequest1.countryCode}${fakeVatRequest1.vatNumber}`
+    );
   });
 
   it(`'list' action should result in 200 and should not mention VAT Requests for different Telegram Chat IDs`, async () => {
@@ -450,8 +469,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
-    expect(testContext.context.res.body).to.not.contain(`${fakeVatRequest2.countryCode}${fakeVatRequest2.vatNumber}`);
+    expect(testContext.context.res?.status).to.equal(200);
+    expect(testContext.context.res?.body).to.not.contain(
+      `${fakeVatRequest2.countryCode}${fakeVatRequest2.vatNumber}`
+    );
   });
 
   it(`'list' action should result in 200 even if there are no VAT Numbers for the given Telegram Chat ID`, async () => {
@@ -466,8 +487,10 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
-    expect(testContext.context.res.body).to.equal('You are not monitoring any VAT numbers.');
+    expect(testContext.context.res?.status).to.equal(200);
+    expect(testContext.context.res?.body).to.equal(
+      'You are not monitoring any VAT numbers.'
+    );
   });
 
   it(`'uncheckAll' action should result in 200 and remove all monitored VAT Numbers from db for the given Telegram Chat ID`, async () => {
@@ -486,7 +509,7 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
+    expect(testContext.context.res?.status).to.equal(200);
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.be.empty;
   });
@@ -507,7 +530,7 @@ describe('HTTP API Tests', () => {
     });
 
     // Assert.
-    expect(testContext.context.res.status).to.equal(200);
+    expect(testContext.context.res?.status).to.equal(200);
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.be.eql([pendingVatRequest]);
   });

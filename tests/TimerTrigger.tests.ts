@@ -28,8 +28,8 @@ describe('TimerTrigger Tests', () => {
 
   it('Should remove valid VAT Request from db and notify user by Telegram', async () => {
     // Arrange.
-    let telegramChatId = null;
-    let telegramMessage = null;
+    let telegramChatId: string | null = null;
+    let telegramMessage: string | null = null;
     testTg.init((chatId, message) => {
       telegramChatId = chatId;
       telegramMessage = message;
@@ -42,7 +42,9 @@ describe('TimerTrigger Tests', () => {
 
     // Assert.
     expect(telegramChatId).to.equal('123');
-    expect(telegramMessage).to.contain(`Congratulations, VAT number 'XX123' is now VALID!`);
+    expect(telegramMessage).to.contain(
+      `Congratulations, VAT number 'XX123' is now VALID!`
+    );
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.be.empty;
   });
@@ -67,8 +69,8 @@ describe('TimerTrigger Tests', () => {
 
   it('Should remove invalid VAT Request from db if it is expired and notify user by Telegram', async () => {
     // Arrange.
-    let telegramChatId = null;
-    let telegramMessage = null;
+    let telegramChatId: string | null = null;
+    let telegramMessage: string | null = null;
     testTg.init((chatId, message) => {
       telegramChatId = chatId;
       telegramMessage = message;
@@ -81,7 +83,9 @@ describe('TimerTrigger Tests', () => {
 
     // Assert.
     expect(telegramChatId).to.equal('123');
-    expect(telegramMessage).to.contain(`You VAT number 'XX123' is no longer monitored because it's still invalid and it's been too long since you registered it`);
+    expect(telegramMessage).to.contain(
+      `You VAT number 'XX123' is no longer monitored because it's still invalid and it's been too long since you registered it`
+    );
     const vatRequests = await db.getAllVatRequests();
     expect(vatRequests).to.be.empty;
   });
@@ -138,20 +142,22 @@ describe('TimerTrigger Tests', () => {
     // Assert.
     const vatRequests = await db.getAllVatRequests();
     const vatRequestErrors = (await db.getAllVatRequestErrors()).map(x => {
-      delete x.id;
-      return x;
+      const { id: _, ...rest } = x;
+      return { ...rest };
     });
     expect(vatRequests).to.be.empty;
-    expect(vatRequestErrors).to.be.eql([{
-      vatRequest: pendingVatRequest,
-      error: 'Oops'
-    }]);
+    expect(vatRequestErrors).to.be.eql([
+      {
+        vatRequest: pendingVatRequest,
+        error: 'Oops'
+      }
+    ]);
   });
 
   it(`Should notify user by Telegram when VAT Request is demoted to error`, async () => {
     // Arrange.
-    let telegramChatId = null;
-    let telegramMessage = null;
+    let telegramChatId: string | null = null;
+    let telegramMessage: string | null = null;
 
     testTg.init((chatId, message) => {
       telegramChatId = chatId;
@@ -169,7 +175,9 @@ describe('TimerTrigger Tests', () => {
 
     // Assert.
     expect(telegramChatId).to.be.equal('123');
-    expect(telegramMessage).to.contain(`Sorry, something went wrong and we had to stop monitoring the VAT number 'XX123'`);
+    expect(telegramMessage).to.contain(
+      `Sorry, something went wrong and we had to stop monitoring the VAT number 'XX123'`
+    );
   });
 
   afterEach(async () => {

@@ -27,13 +27,13 @@ export class DbError extends BaseError {
 }
 
 export type ViesErrorType =
-  'SERVICE_UNAVAILABLE' |
-  'MS_UNAVAILABLE' |
-  'MS_MAX_CONCURRENT_REQ' |
-  'GLOBAL_MAX_CONCURRENT_REQ' |
-  'TIMEOUT' |
-  'CONNECTION_ERROR' |
-  'INVALID_INPUT';
+  | 'SERVICE_UNAVAILABLE'
+  | 'MS_UNAVAILABLE'
+  | 'MS_MAX_CONCURRENT_REQ'
+  | 'GLOBAL_MAX_CONCURRENT_REQ'
+  | 'TIMEOUT'
+  | 'CONNECTION_ERROR'
+  | 'INVALID_INPUT';
 
 export const RecoverableViesErrorTypes: ViesErrorType[] = [
   'SERVICE_UNAVAILABLE',
@@ -70,7 +70,9 @@ export class ViesError extends BaseError {
   }
 
   public get isRecoverable(): boolean {
-    return this.type !== 'unknown' && RecoverableViesErrorTypes.includes(this.type);
+    return (
+      this.type !== 'unknown' && RecoverableViesErrorTypes.includes(this.type)
+    );
   }
 }
 

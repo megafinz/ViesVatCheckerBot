@@ -18,7 +18,9 @@ export const validateVatNumber: RequestHandler = async (req, res, next) => {
     return;
   }
   if (vatNumerString.length < 3) {
-    res.status(400).send('VAT number is in invalid format (expected at least 3 symbols).');
+    res
+      .status(400)
+      .send('VAT number is in invalid format (expected at least 3 symbols).');
     return;
   }
   next();
