@@ -13,7 +13,7 @@
     "format": "npx prettier --write ."
   },
   "devDependencies": {
-    "@azure/functions": "^3.0.0",
+    "@azure/functions": "^3.5.1",
     "@types/chai": "^4.3.1",
     "@types/express": "^4.17.17",
     "@types/mocha": "^10.0.1",
