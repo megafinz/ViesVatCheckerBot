@@ -1,13 +1,12 @@
 import { default as axios } from 'axios';
+import { cfg } from './cfg';
 import { TelegramError } from './errors';
-
-const { TG_BOT_TOKEN } = process.env;
 
 export async function sendMessage(
   chatId: string,
   message: string
 ): Promise<void> {
-  const tgUrl = `https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`;
+  const tgUrl = `https://api.telegram.org/bot${cfg.tg.botToken}/sendMessage`;
 
   try {
     return await axios.post(tgUrl, {

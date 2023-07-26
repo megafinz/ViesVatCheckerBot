@@ -1,14 +1,9 @@
-import type { VatRequest } from '@/models';
 import * as vies from '@/lib/vies';
 import * as db from '@/lib/db';
 import { ViesError } from '@/lib/errors';
 import type { HttpResponse } from '@/lib/http';
-
-const { MAX_PENDING_VAT_NUMBERS_PER_USER, VAT_NUMBER_EXPIRATION_DAYS } =
-  process.env;
-const maxPendingVatNumbersPerUser =
-  parseInt(MAX_PENDING_VAT_NUMBERS_PER_USER) || 10;
-const vatNumberExpirationDays = parseInt(VAT_NUMBER_EXPIRATION_DAYS) || 90;
+import { cfg } from '@/lib/cfg';
+import type { VatRequest } from '@/models';
 
 export type HttpApiHandlerBody =
   | { type: 'success'; message: string }
@@ -36,17 +31,17 @@ export async function check(
           vatRequest.telegramChatId
         );
 
-        if (currentPendingVatNumbers < maxPendingVatNumbersPerUser) {
+        if (currentPendingVatNumbers < cfg.vatNumbers.maxPendingPerUser) {
           await db.tryAddUniqueVatRequest(vatRequest);
         } else {
           return error(
             400,
-            `🔴 Sorry, you reached the limit of maximum VAT numbers you can monitor (${maxPendingVatNumbersPerUser}).`
+            `🔴 Sorry, you reached the limit of maximum VAT numbers you can monitor (${cfg.vatNumbers.maxPendingPerUser}).`
           );
         }
 
         return ok(
-          `🕓 VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. We will monitor it for ${vatNumberExpirationDays} days and notify you if it becomes valid (or if the monitoring period expires).`
+          `🕓 VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}' is not registered in VIES yet. We will monitor it for ${cfg.vatNumbers.expirationDays} days and notify you if it becomes valid (or if the monitoring period expires).`
         );
       }
     } catch (e) {

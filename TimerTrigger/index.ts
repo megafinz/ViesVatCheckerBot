@@ -3,8 +3,7 @@ import * as db from '@/lib/db';
 import * as vies from '@/lib/vies';
 import * as tg from '@/lib/tg';
 import { isRecoverableError } from '@/lib/errors';
-
-const { NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS, TG_ADMIN_CHAT_ID } = process.env;
+import { cfg } from '@/lib/cfg';
 
 const timerTrigger: AzureFunction = async function (
   context: Context
@@ -71,12 +70,12 @@ const timerTrigger: AzureFunction = async function (
         `🔴 Sorry, something went wrong and we had to stop monitoring the VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}'. We'll investigate what happened and try to resume monitoring. We'll notify you when that happens. Sorry for the inconvenience.`
       );
 
-      if (NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS && TG_ADMIN_CHAT_ID) {
+      if (cfg.admin.notifyOnUnrecoverableErrors && cfg.admin.tgChatId) {
         context.log(
-          `Notifying admin by Telegram chat id '${TG_ADMIN_CHAT_ID}'`
+          `Notifying admin by Telegram chat id '${cfg.admin.tgChatId}'`
         );
         await tg.sendMessage(
-          TG_ADMIN_CHAT_ID,
+          cfg.admin.tgChatId,
           `🔴🔴🔴 [ADMIN] There was an error while processing VAT number '${vatRequest.countryCode}${vatRequest.vatNumber}': ${error.message}`
         );
       }

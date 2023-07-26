@@ -1,17 +1,15 @@
 import type { AzureFunction, Context, HttpRequest } from '@azure/functions';
 import { Telegraf } from 'telegraf';
 import { default as axios } from 'axios';
+import { cfg } from '@/lib/cfg';
 
-const {
-  TG_BOT_TOKEN,
-  TG_BOT_API_URL,
-  TG_BOT_API_TOKEN,
-  HTTP_API_URL,
-  HTTP_API_TOKEN
-} = process.env;
+const bot = new Telegraf(cfg.tg.botToken, {
+  telegram: { webhookReply: true }
+});
 
-const bot = new Telegraf(TG_BOT_TOKEN, { telegram: { webhookReply: true } });
-bot.telegram.setWebhook(`${TG_BOT_API_URL}?code=${TG_BOT_API_TOKEN}`);
+bot.telegram.setWebhook(
+  `${cfg.api.azure.tg.url}?code=${cfg.api.azure.tg.authToken}`
+);
 
 bot.command('check', async (ctx) => {
   const params = ctx.update.message.text.split(' ').slice(1);
@@ -24,7 +22,7 @@ bot.command('check', async (ctx) => {
   } else {
     try {
       const result = await axios.post(
-        `${HTTP_API_URL}/check?code=${HTTP_API_TOKEN}`,
+        `${cfg.api.azure.http.url}/check?code=${cfg.api.azure.http.authToken}`,
         {
           telegramChatId: ctx.chat.id,
           vatNumber: params[0]
@@ -50,7 +48,7 @@ bot.command('uncheck', async (ctx) => {
   } else {
     try {
       const result = await axios.post(
-        `${HTTP_API_URL}/uncheck?code=${HTTP_API_TOKEN}`,
+        `${cfg.api.azure.http.url}/uncheck?code=${cfg.api.azure.http.authToken}`,
         {
           telegramChatId: ctx.chat.id,
           vatNumber: params[0]
@@ -68,7 +66,7 @@ bot.command('uncheck', async (ctx) => {
 bot.command('uncheckall', async (ctx) => {
   try {
     const result = await axios.post(
-      `${HTTP_API_URL}/uncheckAll?code=${HTTP_API_TOKEN}`,
+      `${cfg.api.azure.http.url}/uncheckAll?code=${cfg.api.azure.http.authToken}`,
       { telegramChatId: ctx.chat.id }
     );
     ctx.reply(result.data);
@@ -82,7 +80,7 @@ bot.command('uncheckall', async (ctx) => {
 bot.command('list', async (ctx) => {
   try {
     const result = await axios.get(
-      `${HTTP_API_URL}/list?telegramChatId=${ctx.chat.id}&code=${HTTP_API_TOKEN}`
+      `${cfg.api.azure.http.url}/list?telegramChatId=${ctx.chat.id}&code=${cfg.api.azure.http.authToken}`
     );
     ctx.reply(result.data);
     console.log('List success');

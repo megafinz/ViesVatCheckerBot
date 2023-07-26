@@ -79,7 +79,9 @@ You can't run this as is.
 
 ### Unit Tests
 
-You can run unit tests with `yarn test`. Tests are written with [mocha](https://mochajs.org), [chai](https://www.chaijs.com) and [sinon](https://sinonjs.org).
+You need to create `.env.test` file first so configuration can be initialized properly. You can just duplicate `.env.example` in this case.
+You can run unit tests with `yarn test`.
+Tests are written with [mocha](https://mochajs.org), [chai](https://www.chaijs.com) and [sinon](https://sinonjs.org).
 
 ### E2E
 
@@ -87,6 +89,7 @@ Tests are located in the [Admin Portal](https://github.com/megafinz/ViesVatCheck
 
 E2E mode is just an [express](https://expressjs.com) server reusing the same handlers that are used in Azure Functions APIs + a little extra helpers.
 
+You need to create `.env.e2e` file first so configuration can be initialized properly. You can just duplicate `.env.example` in this case.
 You can run backend in E2E mode with `yarn start:e2e`.
 
 # Why Does It Do That?

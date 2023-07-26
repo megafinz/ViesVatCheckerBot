@@ -7,8 +7,8 @@
     "watch": "tsc -w",
     "prestart": "npm run build",
     "start": "func start",
-    "start:e2e": "nodemon --watch .env --watch e2e --watch lib --watch HttpAdminApi --watch HttpApi -r dotenv/config -r tsconfig-paths/register e2e/server.ts",
-    "test": "ts-mocha --paths --project ./tsconfig.json --timeout 5000 --exit './tests/*.ts'",
+    "start:e2e": "cross-env DOTENV_CONFIG_PATH=./.env.e2e nodemon --watch .env --watch e2e --watch lib --watch HttpAdminApi --watch HttpApi --require dotenv/config --require tsconfig-paths/register e2e/server.ts",
+    "test": "cross-env DOTENV_CONFIG_PATH=./.env.test ts-mocha --paths --project ./tsconfig.json --require dotenv/config --timeout 5000 --exit './tests/*.ts'",
     "lint": "npx eslint **/*.ts",
     "prepare": "husky install"
   },
@@ -22,6 +22,7 @@
     "@typescript-eslint/eslint-plugin": "^6.2.0",
     "@typescript-eslint/parser": "^5.62.0",
     "chai": "^4.3.7",
+    "cross-env": "7.0.3",
     "eslint": "^8.45.0",
     "eslint-config-google": "^0.14.0",
     "eslint-config-prettier": "8.8.0",
@@ -43,7 +44,8 @@
     "mongodb-memory-server": "^8.7.0",
     "mongoose": "^6.3.3",
     "soap": "^0.43.0",
-    "telegraf": "^4.8.2"
+    "telegraf": "^4.8.2",
+    "zod": "3.21.4"
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"

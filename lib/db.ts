@@ -1,4 +1,5 @@
 import { Schema, model, connect, isValidObjectId } from 'mongoose';
+import { cfg } from '@/lib/cfg';
 import type { PendingVatRequest, VatRequest, VatRequestError } from '@/models';
 import { DbError } from './errors';
 import { addDays } from './utils';
@@ -11,9 +12,6 @@ export type ResolveErrorResult =
       type: 'all-errors-resolved-and-vat-request-monitoring-is-resumed';
       vatRequest: VatRequest;
     };
-
-const { MONGODB_CONNECTION_STRING, VAT_NUMBER_EXPIRATION_DAYS } = process.env;
-const vatNumberExpirationDays = parseInt(VAT_NUMBER_EXPIRATION_DAYS) || 90;
 
 const VatRequestSchema = new Schema({
   telegramChatId: String,
@@ -39,9 +37,7 @@ const VatRequestErrorModel = model(
 
 let db: typeof import('mongoose') = null;
 
-export async function init(
-  connectionString: string = MONGODB_CONNECTION_STRING
-) {
+export async function init(connectionString: string = cfg.db.connectionString) {
   if (!db) {
     await dbCall(async () => {
       db = await connect(connectionString);
@@ -64,7 +60,7 @@ export async function addVatRequest(
 ): Promise<PendingVatRequest> {
   return await dbCall(async () => {
     if (!expirationDate) {
-      expirationDate = addDays(new Date(), vatNumberExpirationDays);
+      expirationDate = addDays(new Date(), cfg.vatNumbers.expirationDays);
     }
     const modelToInsert = new VatRequestModel({
       ...doc,

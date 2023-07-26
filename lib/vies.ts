@@ -1,15 +1,14 @@
 import * as soap from 'soap';
 import type { VatRequest } from '@/models';
+import { cfg } from './cfg';
 import { ViesError } from './errors';
-
-const { VIES_URL } = process.env;
 
 let vies = null;
 
 export async function init() {
   if (!vies) {
     try {
-      vies = await soap.createClientAsync(VIES_URL);
+      vies = await soap.createClientAsync(cfg.vies.url);
     } catch (error) {
       throw new ViesError(error.message || JSON.stringify(error));
     }
