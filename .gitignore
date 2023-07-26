@@ -99,5 +99,5 @@ __queuestorage__
 __azurite_db*__.json
 
 node_modules
-.vscode
+
 .idea
