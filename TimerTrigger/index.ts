@@ -1,8 +1,8 @@
-import { AzureFunction, Context } from '@azure/functions';
-import * as db from '../lib/db';
-import * as vies from '../lib/vies';
-import * as tg from '../lib/tg';
-import { isRecoverableError } from '../lib/errors';
+import type { AzureFunction, Context } from '@azure/functions';
+import * as db from '@/lib/db';
+import * as vies from '@/lib/vies';
+import * as tg from '@/lib/tg';
+import { isRecoverableError } from '@/lib/errors';
 
 const { NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS, TG_ADMIN_CHAT_ID } = process.env;
 

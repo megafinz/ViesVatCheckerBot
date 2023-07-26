@@ -1,0 +1,24 @@
+name: PR Check
+on: [pull_request]
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  KEYSTONE_GRAPHQL_URL: ${{ secrets.PR__KEYSTONE_GRAPHQL_URL }}
+  NEXT_PUBLIC_KEYSTONE_GRAPHQL_URL: ${{ secrets.NEXT_PUBLIC_KEYSTONE_GRAPHQL_URL }}
+  S3_DOMAINS: ${{ secrets.S3_DOMAINS }}
+  API_KEY: ${{ secrets.API_KEY }}
+  WEBSITE_BASE_URL: ${{ secrets.WEBSITE_BASE_URL }}
+  NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
+jobs:
+  check-pr:
+    name: PR Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: "yarn"
+      - run: npm install -g yarn
+      - run: yarn --frozen-lock-file
+      - run: yarn build:ci
+      - run: yarn lint:ci

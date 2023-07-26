@@ -1,8 +1,8 @@
-import * as db from '../lib/db';
-import * as tg from '../lib/tg';
-import { HttpResponse } from '../lib/http';
-import { Logger } from '../lib/utils';
-import { PendingVatRequest, VatRequestError } from '../models';
+import * as db from '@/lib/db';
+import * as tg from '@/lib/tg';
+import { HttpResponse } from '@/lib/http';
+import { Logger } from '@/lib/utils';
+import { PendingVatRequest, VatRequestError } from '@/models';
 
 export async function list(): Promise<HttpResponse<PendingVatRequest[]>> {
   return {

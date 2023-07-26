@@ -1,12 +1,12 @@
 import { expect } from 'chai';
-import * as db from '../lib/db';
+import * as db from '@/lib/db';
+import type { VatRequest } from '@/models';
+import { RecoverableViesErrorTypes, ViesError } from '@/lib/errors';
+import timerTrigger from '@/TimerTrigger';
 import * as testContext from './test-context';
 import * as testDb from './test-db';
 import * as testVies from './test-vies';
 import * as testTg from './test-tg';
-import timerTrigger from '../TimerTrigger';
-import { VatRequest } from '../models';
-import { RecoverableViesErrorTypes, ViesError } from '../lib/errors';
 
 const fakeVatRequest: VatRequest = {
   telegramChatId: '123',
@@ -141,7 +141,7 @@ describe('TimerTrigger Tests', () => {
 
     // Assert.
     const vatRequests = await db.getAllVatRequests();
-    const vatRequestErrors = (await db.getAllVatRequestErrors()).map(x => {
+    const vatRequestErrors = (await db.getAllVatRequestErrors()).map((x) => {
       const { id: _, ...rest } = x;
       return { ...rest };
     });

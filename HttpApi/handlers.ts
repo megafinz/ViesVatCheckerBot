@@ -1,8 +1,8 @@
-import { VatRequest } from '../models';
-import * as vies from '../lib/vies';
-import * as db from '../lib/db';
-import { ViesError } from '../lib/errors';
-import { HttpResponse } from '../lib/http';
+import type { VatRequest } from '@/models';
+import * as vies from '@/lib/vies';
+import * as db from '@/lib/db';
+import { ViesError } from '@/lib/errors';
+import type { HttpResponse } from '@/lib/http';
 
 const { MAX_PENDING_VAT_NUMBERS_PER_USER, VAT_NUMBER_EXPIRATION_DAYS } =
   process.env;
@@ -109,7 +109,7 @@ export async function list(
     if (result.length > 0) {
       return ok(
         `You monitor the following VAT numbers:\n\n${result
-          .map(vr => `'${vr.countryCode}${vr.vatNumber}'`)
+          .map((vr) => `'${vr.countryCode}${vr.vatNumber}'`)
           .join(', ')}.`
       );
     } else {

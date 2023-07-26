@@ -3,9 +3,12 @@
     "module": "commonjs",
     "target": "es6",
     "outDir": "dist",
+    "baseUrl": ".",
     "rootDir": ".",
     "sourceMap": true,
-    "strict": false
-  },
-  "exclude": ["./e2e", "./tests"]
+    "strict": false,
+    "paths": {
+      "@/*": ["./*"]
+    }
+  }
 }

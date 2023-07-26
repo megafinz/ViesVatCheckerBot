@@ -1,6 +1,6 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
-import * as db from '../lib/db';
+import * as db from '@/lib/db';
 
 let mongoDb: MongoMemoryServer;
 

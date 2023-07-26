@@ -1,5 +1,5 @@
 import * as soap from 'soap';
-import { VatRequest } from '../models';
+import type { VatRequest } from '@/models';
 import { ViesError } from './errors';
 
 const { VIES_URL } = process.env;

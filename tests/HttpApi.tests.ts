@@ -1,12 +1,12 @@
 import { expect } from 'chai';
-import * as db from '../lib/db';
+import * as db from '@/lib/db';
+import { RecoverableViesErrorTypes, ViesError } from '@/lib/errors';
+import type { VatRequest } from '@/models';
+import httpApi from '@/HttpApi';
 import * as testContext from './test-context';
 import * as testDb from './test-db';
 import * as testTg from './test-tg';
 import * as testVies from './test-vies';
-import httpApi from '../HttpApi';
-import { VatRequest } from '../models';
-import { RecoverableViesErrorTypes, ViesError } from '../lib/errors';
 
 const MAX_PENDING_VAT_NUMBERS_PER_USER = 10;
 
@@ -174,7 +174,7 @@ describe('HTTP API Tests', () => {
 
     // Assert.
     expect(testContext.context.res?.status).to.equal(200);
-    const vatRequests = (await db.getAllVatRequests()).map(x => {
+    const vatRequests = (await db.getAllVatRequests()).map((x) => {
       const { expirationDate: _, ...rest } = x;
       return { ...rest };
     });
@@ -301,7 +301,7 @@ describe('HTTP API Tests', () => {
       expect(testContext.context.res?.body).to.contain(
         `We'll keep monitoring it for a while`
       );
-      const vatRequests = (await db.getAllVatRequests()).map(x => {
+      const vatRequests = (await db.getAllVatRequests()).map((x) => {
         const { expirationDate: _, ...rest } = x;
         return { ...rest };
       });

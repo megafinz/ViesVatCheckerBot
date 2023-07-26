@@ -63,7 +63,7 @@ You can't run this as is.
 }
 ```
 
-7. You can now run your functions locally (either through `npm run` or through the VS Code's **Run and Debug** pane).
+7. You can now run your functions locally (either through `yarn` or through the VS Code's **Run and Debug** pane).
 8. You can also deploy your functions to Azure using **Azure > Functions** pane.
 9. After you've deployed your functions, you can now update **Azure > Functions > {Your Project} > Application Settings** to contain the same settings that you added to `local.settings.json`:
    - `MONGODB_CONNECTION_STRING` and `TG_BOT_TOKEN` will be the same.
@@ -79,7 +79,7 @@ You can't run this as is.
 
 ### Unit Tests
 
-You can run unit tests with `npm run test`. Tests are written with [mocha](https://mochajs.org), [chai](https://www.chaijs.com) and [sinon](https://sinonjs.org).
+You can run unit tests with `yarn test`. Tests are written with [mocha](https://mochajs.org), [chai](https://www.chaijs.com) and [sinon](https://sinonjs.org).
 
 ### E2E
 
@@ -87,7 +87,7 @@ Tests are located in the [Admin Portal](https://github.com/megafinz/ViesVatCheck
 
 E2E mode is just an [express](https://expressjs.com) server reusing the same handlers that are used in Azure Functions APIs + a little extra helpers.
 
-You can run backend in E2E mode with `npm run start:e2e`.
+You can run backend in E2E mode with `yarn start:e2e`.
 
 # Why Does It Do That?
 

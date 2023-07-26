@@ -7,10 +7,10 @@
     "watch": "tsc -w",
     "prestart": "npm run build",
     "start": "func start",
-    "start:e2e": "nodemon --watch .env --watch e2e --watch lib --watch HttpAdminApi --watch HttpApi -r dotenv/config e2e/server.ts",
-    "test": "mocha -r ts-node/register --timeout 5000 --exit './tests/*.ts'",
+    "start:e2e": "nodemon --watch .env --watch e2e --watch lib --watch HttpAdminApi --watch HttpApi -r dotenv/config -r tsconfig-paths/register e2e/server.ts",
+    "test": "ts-mocha --paths --project ./tsconfig.json --timeout 5000 --exit './tests/*.ts'",
     "lint": "npx eslint **/*.ts",
-    "format": "npx prettier --write ."
+    "prepare": "husky install"
   },
   "devDependencies": {
     "@azure/functions": "^3.5.1",
@@ -24,21 +24,28 @@
     "chai": "^4.3.7",
     "eslint": "^8.45.0",
     "eslint-config-google": "^0.14.0",
-    "eslint-config-prettier": "^8.8.0",
-    "mocha": "^10.2.0",
-    "nodemon": "^3.0.1",
-    "prettier": "^3.0.0",
-    "sinon": "^15.2.0",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.1.6"
+    "eslint-config-prettier": "8.8.0",
+    "husky": "8.0.3",
+    "lint-staged": "13.2.3",
+    "mocha": "^10.0.0",
+    "nodemon": "^2.0.16",
+    "prettier": "3.0.0",
+    "sinon": "^14.0.0",
+    "ts-mocha": "10.0.0",
+    "ts-node": "^10.7.0",
+    "tsconfig-paths": "4.2.0",
+    "typescript": "^4.0.0"
   },
   "dependencies": {
     "axios": "^0.27.2",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "mongodb-memory-server": "^8.13.0",
-    "mongoose": "^7.4.0",
-    "soap": "^1.0.0",
-    "telegraf": "^4.12.2"
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "mongodb-memory-server": "^8.7.0",
+    "mongoose": "^6.3.3",
+    "soap": "^0.43.0",
+    "telegraf": "^4.8.2"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
   }
 }

@@ -1,4 +1,4 @@
-import { AzureFunction, Context, HttpRequest } from '@azure/functions';
+import type { AzureFunction, Context, HttpRequest } from '@azure/functions';
 import { Telegraf } from 'telegraf';
 import { default as axios } from 'axios';
 
@@ -13,7 +13,7 @@ const {
 const bot = new Telegraf(TG_BOT_TOKEN, { telegram: { webhookReply: true } });
 bot.telegram.setWebhook(`${TG_BOT_API_URL}?code=${TG_BOT_API_TOKEN}`);
 
-bot.command('check', async ctx => {
+bot.command('check', async (ctx) => {
   const params = ctx.update.message.text.split(' ').slice(1);
 
   if (params.length !== 1) {
@@ -39,7 +39,7 @@ bot.command('check', async ctx => {
   }
 });
 
-bot.command('uncheck', async ctx => {
+bot.command('uncheck', async (ctx) => {
   const params = ctx.update.message.text.split(' ').slice(1);
 
   if (params.length !== 1) {
@@ -65,7 +65,7 @@ bot.command('uncheck', async ctx => {
   }
 });
 
-bot.command('uncheckall', async ctx => {
+bot.command('uncheckall', async (ctx) => {
   try {
     const result = await axios.post(
       `${HTTP_API_URL}/uncheckAll?code=${HTTP_API_TOKEN}`,
@@ -79,7 +79,7 @@ bot.command('uncheckall', async ctx => {
   }
 });
 
-bot.command('list', async ctx => {
+bot.command('list', async (ctx) => {
   try {
     const result = await axios.get(
       `${HTTP_API_URL}/list?telegramChatId=${ctx.chat.id}&code=${HTTP_API_TOKEN}`

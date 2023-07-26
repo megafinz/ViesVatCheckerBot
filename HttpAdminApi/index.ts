@@ -1,5 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from '@azure/functions';
-import * as db from '../lib/db';
+import * as db from '@/lib/db';
 import { list, listErrors, resolveError, resolveAllErrors } from './handlers';
 
 type Action = 'list' | 'listErrors' | 'resolveError' | 'resolveAllErrors';

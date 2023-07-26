@@ -11,5 +11,5 @@ export function addDays(date: Date, days: number): Date {
 }
 
 export interface Logger {
-  (...args: any[]): void;
+  (..._: any[]): void;
 }

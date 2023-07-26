@@ -1,5 +1,5 @@
-import { AzureFunction, Context, HttpRequest } from '@azure/functions';
-import { parseVatNumber } from '../lib/utils';
+import type { AzureFunction, Context, HttpRequest } from '@azure/functions';
+import { parseVatNumber } from '@/lib/utils';
 import * as handlers from './handlers';
 
 type Action = 'check' | 'uncheck' | 'uncheckAll' | 'list';

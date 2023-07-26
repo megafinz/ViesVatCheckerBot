@@ -1,5 +1,5 @@
 import { Schema, model, connect, isValidObjectId } from 'mongoose';
-import { PendingVatRequest, VatRequest, VatRequestError } from '../models';
+import type { PendingVatRequest, VatRequest, VatRequestError } from '@/models';
 import { DbError } from './errors';
 import { addDays } from './utils';
 
@@ -117,7 +117,7 @@ export async function getAllVatRequests(
     const result = await VatRequestModel.find(
       telegramChatId ? { telegramChatId: telegramChatId } : {}
     );
-    return result.map(m => modelToVatRequest(m));
+    return result.map((m) => modelToVatRequest(m));
   });
 }
 
@@ -249,7 +249,7 @@ export async function demoteVatRequestToError(
 export async function getAllVatRequestErrors(): Promise<VatRequestError[]> {
   return await dbCall(async () => {
     const result = await VatRequestErrorModel.find({});
-    return result.map(m => modelToVatRequestError(m));
+    return result.map((m) => modelToVatRequestError(m));
   });
 }
 

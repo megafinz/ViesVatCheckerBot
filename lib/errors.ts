@@ -55,7 +55,7 @@ export class ViesError extends BaseError {
   constructor(message?: string) {
     super('ViesError', message);
 
-    this._type = AllViesErrorTypes.find(x => message.includes(x));
+    this._type = AllViesErrorTypes.find((x) => message.includes(x));
 
     if (!this._type && message?.includes('Unexpected root element of WSDL')) {
       // Likely VIES endoint didn't output valid WSDL because it's down.

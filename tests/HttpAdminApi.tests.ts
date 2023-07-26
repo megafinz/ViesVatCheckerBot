@@ -1,10 +1,10 @@
 import { expect } from 'chai';
-import * as db from '../lib/db';
+import * as db from '@/lib/db';
+import type { PendingVatRequest } from '@/models';
+import httpAdminApi from '@/HttpAdminApi';
 import * as testContext from './test-context';
 import * as testDb from './test-db';
 import * as testTg from './test-tg';
-import httpAdminApi from '../HttpAdminApi';
-import { PendingVatRequest } from '../models';
 
 const fakeVatRequest1: PendingVatRequest = {
   telegramChatId: '123',
@@ -186,7 +186,7 @@ describe('HTTP Admin API Tests', () => {
 
     let telegramChatId = '';
 
-    testTg.init(chatId => {
+    testTg.init((chatId) => {
       telegramChatId = chatId;
     });
 
