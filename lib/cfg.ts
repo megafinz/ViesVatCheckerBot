@@ -27,8 +27,14 @@ const CfgSchema = z.object({
     tgChatId: z.string().optional()
   }),
   vatNumbers: z.object({
-    expirationDays: z.number().default(90),
-    maxPendingPerUser: z.number().default(10)
+    expirationDays: z
+      .string()
+      .default('90')
+      .pipe(z.coerce.number().default(90)),
+    maxPendingPerUser: z
+      .string()
+      .default('10')
+      .pipe(z.coerce.number().default(10))
   })
 });
 

@@ -57,6 +57,7 @@ You can't run this as is.
     "TG_BOT_API_TOKEN": "", // not required for local deployment
     "HTTP_API_URL": "http://localhost:7071/api/HttpApi",
     "HTTP_API_TOKEN": "", // not required for local deployment
+    "VIES_URL": "https://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl",
     "MAX_PENDING_VAT_NUMBERS_PER_USER": 10,
     "VAT_NUMBER_EXPIRATION_DAYS": 90
   }
