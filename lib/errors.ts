@@ -32,6 +32,7 @@ export type ViesErrorType =
   | 'MS_MAX_CONCURRENT_REQ'
   | 'GLOBAL_MAX_CONCURRENT_REQ'
   | 'TIMEOUT'
+  | 'TIMEDOUT'
   | 'CONNECTION_ERROR'
   | 'INVALID_INPUT';
 
@@ -41,6 +42,7 @@ export const RecoverableViesErrorTypes: ViesErrorType[] = [
   'MS_MAX_CONCURRENT_REQ',
   'GLOBAL_MAX_CONCURRENT_REQ',
   'TIMEOUT',
+  'TIMEDOUT',
   'CONNECTION_ERROR'
 ];
 
