@@ -1,5 +1,5 @@
-import * as db from '@/lib/db';
 import { AzureFunction, Context, HttpRequest } from '@azure/functions';
+import * as db from '../lib/db';
 import {
   list,
   listErrors,

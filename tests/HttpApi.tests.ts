@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import * as db from '@/lib/db';
-import { RecoverableViesErrorTypes, ViesError } from '@/lib/errors';
-import type { VatRequest } from '@/models';
-import httpApi from '@/HttpApi';
+import * as db from '../lib/db';
+import { RecoverableViesErrorTypes, ViesError } from '../lib/errors';
+import type { VatRequest } from '../models';
+import httpApi from '../HttpApi';
 import * as testContext from './test-context';
 import * as testDb from './test-db';
 import * as testTg from './test-tg';

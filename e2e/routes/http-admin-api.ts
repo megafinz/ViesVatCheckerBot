@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import * as httpAdminApiHandlers from '@/HttpAdminApi/handlers';
+import * as httpAdminApiHandlers from '../../HttpAdminApi/handlers';
 
 const router = Router();
 

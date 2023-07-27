@@ -1,5 +1,5 @@
 import * as sinon from 'sinon';
-import * as tg from '@/lib/tg';
+import * as tg from '../lib/tg';
 
 export function init(fn?: (_: string, __: string) => void) {
   sinon.stub(tg, 'sendMessage').callsFake(async (c, m) => {

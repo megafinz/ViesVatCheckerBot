@@ -1,9 +1,9 @@
-import * as vies from '@/lib/vies';
-import * as db from '@/lib/db';
-import { ViesError } from '@/lib/errors';
-import type { HttpResponse } from '@/lib/http';
-import { cfg } from '@/lib/cfg';
-import type { VatRequest } from '@/models';
+import { cfg } from '../lib/cfg';
+import * as db from '../lib/db';
+import { ViesError } from '../lib/errors';
+import type { HttpResponse } from '../lib/http';
+import * as vies from '../lib/vies';
+import type { VatRequest } from '../models';
 
 export type HttpApiHandlerBody =
   | { type: 'success'; message: string }

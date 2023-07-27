@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import * as db from '@/lib/db';
-import type { VatRequest } from '@/models';
-import { RecoverableViesErrorTypes, ViesError } from '@/lib/errors';
-import timerTrigger from '@/TimerTrigger';
+import * as db from '../lib/db';
+import type { VatRequest } from '../models';
+import { RecoverableViesErrorTypes, ViesError } from '../lib/errors';
+import timerTrigger from '../TimerTrigger';
 import * as testContext from './test-context';
 import * as testDb from './test-db';
 import * as testVies from './test-vies';

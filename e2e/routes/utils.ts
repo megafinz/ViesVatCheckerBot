@@ -1,6 +1,6 @@
 import { Request, RequestHandler } from 'express';
-import { parseVatNumber } from '@/lib/utils';
-import { VatRequest } from '@/models';
+import { parseVatNumber } from '../../lib/utils';
+import { VatRequest } from '../../models';
 
 export const validateTelegramChatId: RequestHandler = (req, res, next) => {
   const telegramChatId = req.query.telegramChatId || req.body?.telegramChatId;

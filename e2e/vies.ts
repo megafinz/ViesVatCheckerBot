@@ -1,4 +1,4 @@
-import * as vies from '@/lib/vies';
+import * as vies from '../lib/vies';
 
 export async function init() {
   await vies.init();

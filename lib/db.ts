@@ -1,6 +1,6 @@
-import { Schema, model, connect, isValidObjectId } from 'mongoose';
-import { cfg } from '@/lib/cfg';
-import type { PendingVatRequest, VatRequest, VatRequestError } from '@/models';
+import { Schema, connect, isValidObjectId, model } from 'mongoose';
+import { cfg } from '../lib/cfg';
+import type { PendingVatRequest, VatRequest, VatRequestError } from '../models';
 import { DbError } from './errors';
 import { addDays } from './utils';
 

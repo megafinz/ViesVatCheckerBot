@@ -1,9 +1,9 @@
 import type { AzureFunction, Context } from '@azure/functions';
-import * as db from '@/lib/db';
-import * as vies from '@/lib/vies';
-import * as tg from '@/lib/tg';
-import { isRecoverableError } from '@/lib/errors';
-import { cfg } from '@/lib/cfg';
+import { cfg } from '../lib/cfg';
+import * as db from '../lib/db';
+import { isRecoverableError } from '../lib/errors';
+import * as tg from '../lib/tg';
+import * as vies from '../lib/vies';
 
 const timerTrigger: AzureFunction = async function (
   context: Context

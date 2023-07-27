@@ -1,5 +1,5 @@
 import * as soap from 'soap';
-import type { VatRequest } from '@/models';
+import type { VatRequest } from '../models';
 import { cfg } from './cfg';
 import { ViesError } from './errors';
 

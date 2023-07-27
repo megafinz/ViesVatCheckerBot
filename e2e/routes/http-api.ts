@@ -1,5 +1,5 @@
 import { Response, Router } from 'express';
-import * as httpApi from '@/HttpApi/handlers';
+import * as httpApi from '../../HttpApi/handlers';
 import {
   getVatRequest,
   validateTelegramChatId,

@@ -1,7 +1,7 @@
 import { expect } from 'chai';
-import * as db from '@/lib/db';
-import type { PendingVatRequest } from '@/models';
-import httpAdminApi from '@/HttpAdminApi';
+import httpAdminApi from '../HttpAdminApi';
+import * as db from '../lib/db';
+import type { PendingVatRequest } from '../models';
 import * as testContext from './test-context';
 import * as testDb from './test-db';
 import * as testTg from './test-tg';

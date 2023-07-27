@@ -1,7 +1,7 @@
 import type { AzureFunction, Context, HttpRequest } from '@azure/functions';
-import { Telegraf } from 'telegraf';
 import { default as axios } from 'axios';
-import { cfg } from '@/lib/cfg';
+import { Telegraf } from 'telegraf';
+import { cfg } from '../lib/cfg';
 
 const bot = new Telegraf(cfg.tg.botToken, {
   telegram: { webhookReply: true }
