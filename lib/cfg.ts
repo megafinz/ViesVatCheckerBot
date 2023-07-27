@@ -23,7 +23,10 @@ const CfgSchema = z.object({
     })
   }),
   admin: z.object({
-    notifyOnUnrecoverableErrors: z.boolean().default(false),
+    notifyOnUnrecoverableErrors: z
+      .string()
+      .default('false')
+      .pipe(z.coerce.boolean().default(false)),
     tgChatId: z.string().optional()
   }),
   vatNumbers: z.object({
