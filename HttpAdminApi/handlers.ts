@@ -79,6 +79,29 @@ export async function resolveAllErrors(log: Logger, silent?: boolean) {
   };
 }
 
+export async function removeError(log: Logger, errorId?: string) {
+  if (!errorId) {
+    return {
+      status: 400,
+      body: 'Missing VAT Request Error ID'
+    };
+  }
+
+  const result = await db.removeVatRequestError(errorId);
+
+  if (result) {
+    log(`VAT Request Error with id '${errorId}' has been successfully removed`);
+    return {
+      status: 204
+    };
+  } else {
+    return {
+      status: 404,
+      body: `VAT Request Error with id '${errorId}' not found`
+    };
+  }
+}
+
 async function resolve(
   log: Logger,
   vatRequestErrorId: string,

@@ -1,13 +1,25 @@
-import { AzureFunction, Context, HttpRequest } from '@azure/functions';
 import * as db from '@/lib/db';
-import { list, listErrors, resolveError, resolveAllErrors } from './handlers';
+import { AzureFunction, Context, HttpRequest } from '@azure/functions';
+import {
+  list,
+  listErrors,
+  removeError,
+  resolveAllErrors,
+  resolveError
+} from './handlers';
 
-type Action = 'list' | 'listErrors' | 'resolveError' | 'resolveAllErrors';
+type Action =
+  | 'list'
+  | 'listErrors'
+  | 'resolveError'
+  | 'resolveAllErrors'
+  | 'removeError';
 const allowedActions: Action[] = [
   'list',
   'listErrors',
   'resolveError',
-  'resolveAllErrors'
+  'resolveAllErrors',
+  'removeError'
 ];
 
 const httpTrigger: AzureFunction = async function (
@@ -49,6 +61,12 @@ const httpTrigger: AzureFunction = async function (
     case 'resolveAllErrors': {
       const silent = req.query.silent || req.body?.silent;
       context.res = { ...(await resolveAllErrors(context.log, silent)) };
+      return;
+    }
+
+    case 'removeError': {
+      const errorId = req.query.errorId || req.body?.errorId;
+      context.res = { ...(await removeError(context.log, errorId)) };
       return;
     }
   }

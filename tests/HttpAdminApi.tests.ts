@@ -246,6 +246,61 @@ describe('HTTP Admin API Tests', () => {
     expect(vatRequests).to.eql([fakeVatRequest1, fakeVatRequest2]);
   });
 
+  it(`'removeError' action should result in 400 if 'errorId' param is missing`, async () => {
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {},
+      params: {
+        action: 'removeError'
+      }
+    });
+
+    // Assert.
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.equal(
+      'Missing VAT Request Error ID'
+    );
+  });
+
+  it(`'removeError' action should result in 404 if there is no such error`, async () => {
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        errorId: 'xxx'
+      },
+      params: {
+        action: 'removeError'
+      }
+    });
+
+    // Assert.
+    expect(testContext.context.res?.status).to.equal(404);
+    expect(testContext.context.res?.body).to.equal(
+      `VAT Request Error with id 'xxx' not found`
+    );
+  });
+
+  it(`'removeError' action should remove specific error from db`, async () => {
+    // Arrange.
+    const error1 = await db.addVatRequestError(fakeVatRequest1, 'Oops1');
+    const error2 = await db.addVatRequestError(fakeVatRequest1, 'Oops2');
+
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        errorId: error1.id
+      },
+      params: {
+        action: 'removeError'
+      }
+    });
+
+    // Assert.
+    expect(testContext.context.res?.status).to.equal(204);
+    const vatRequestErrors = await db.getAllVatRequestErrors();
+    expect(vatRequestErrors).to.eql([error2]);
+  });
+
   afterEach(async () => {
     testContext.tearDown();
     testTg.tearDown();
