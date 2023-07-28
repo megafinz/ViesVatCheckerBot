@@ -1,7 +1,7 @@
 import * as db from '../lib/db';
 import { HttpResponse } from '../lib/http';
 import * as tg from '../lib/tg';
-import { Logger } from '../lib/utils';
+import { Logger, parseVatNumber } from '../lib/utils';
 import { PendingVatRequest, VatRequestError } from '../models';
 
 export async function list(): Promise<HttpResponse<PendingVatRequest[]>> {
@@ -79,25 +79,29 @@ export async function resolveAllErrors(log: Logger, silent?: boolean) {
   };
 }
 
-export async function removeError(log: Logger, errorId?: string) {
-  if (!errorId) {
+export async function removeError(log: Logger, vatRequestErrorId?: string) {
+  if (!vatRequestErrorId) {
     return {
       status: 400,
       body: 'Missing VAT Request Error ID'
     };
   }
 
-  const result = await db.removeVatRequestError(errorId);
+  log(`Removing error with id '${vatRequestErrorId}'.`);
+
+  const result = await db.removeVatRequestError(vatRequestErrorId);
 
   if (result) {
-    log(`VAT Request Error with id '${errorId}' has been successfully removed`);
+    log(
+      `VAT Request Error with id '${vatRequestErrorId}' has been successfully removed`
+    );
     return {
       status: 204
     };
   } else {
     return {
       status: 404,
-      body: `VAT Request Error with id '${errorId}' not found`
+      body: `VAT Request Error with id '${vatRequestErrorId}' not found`
     };
   }
 }
@@ -133,4 +137,73 @@ async function resolve(
   }
 
   return result;
+}
+
+export async function update(
+  log: Logger,
+  telegramChatId: string,
+  vatNumber: string,
+  newVatNumber: string
+) {
+  if (!telegramChatId) {
+    return {
+      status: 400,
+      body: 'Missing Telegram Chat ID'
+    };
+  }
+
+  if (!vatNumber) {
+    return {
+      status: 400,
+      body: 'Missing VAT Number'
+    };
+  }
+
+  if (!newVatNumber) {
+    return {
+      status: 400,
+      body: 'Missing new VAT Number'
+    };
+  }
+
+  if (vatNumber === newVatNumber) {
+    return {
+      status: 204
+    };
+  }
+
+  // TODO: validate new VAT number
+
+  log(`Updaing VAT Request with number '${vatNumber}' to '${newVatNumber}'.`);
+
+  const { countryCode: oldCountryCode, vatNumber: oldVatNumber } =
+    parseVatNumber(vatNumber);
+  const { countryCode: updatedCountryCode, vatNumber: updatedVatNumber } =
+    parseVatNumber(newVatNumber);
+
+  const vatRequest = {
+    telegramChatId: telegramChatId,
+    countryCode: oldCountryCode,
+    vatNumber: oldVatNumber
+  };
+
+  const result = await db.updateVatRequest(vatRequest, {
+    countryCode: updatedCountryCode,
+    vatNumber: updatedVatNumber
+  });
+
+  if (!result) {
+    return {
+      status: 404,
+      body: `VAT Request with number '${vatNumber}' and Telegram Chat ID '${telegramChatId}' not found.`
+    };
+  }
+
+  log(
+    `VAT Request with number '${vatNumber}' and Telegram Chat ID '${telegramChatId}' has been successfully updated to '${newVatNumber}'`
+  );
+
+  return {
+    status: 204
+  };
 }

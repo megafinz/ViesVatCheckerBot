@@ -301,6 +301,117 @@ describe('HTTP Admin API Tests', () => {
     expect(vatRequestErrors).to.eql([error2]);
   });
 
+  it(`'update' should result in 400 if 'telegramChatId' param is missing`, async () => {
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {},
+      params: {
+        action: 'update'
+      }
+    });
+
+    // Assert.
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.equal('Missing Telegram Chat ID');
+  });
+
+  it(`'update' should result in 400 if 'vatNumber' param is missing`, async () => {
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        telegramChatId: 'xxx'
+      },
+      params: {
+        action: 'update'
+      }
+    });
+
+    // Assert.
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.equal('Missing VAT Number');
+  });
+
+  it(`'update' should result in 400 if 'vatNumber' param is missing`, async () => {
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        telegramChatId: 'xxx',
+        vatNumber: 'xxx'
+      },
+      params: {
+        action: 'update'
+      }
+    });
+
+    // Assert.
+    expect(testContext.context.res?.status).to.equal(400);
+    expect(testContext.context.res?.body).to.equal('Missing new VAT Number');
+  });
+
+  it(`'update' should result in 404 if VAT Request is not found`, async () => {
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        telegramChatId: 'xxx',
+        vatNumber: 'xxx',
+        newVatNumber: 'yyy'
+      },
+      params: {
+        action: 'update'
+      }
+    });
+
+    // Assert.
+    expect(testContext.context.res?.status).to.equal(404);
+    expect(testContext.context.res?.body).to.equal(
+      `VAT Request with number 'xxx' and Telegram Chat ID 'xxx' not found.`
+    );
+  });
+
+  it(`'update' should result in 204 if new VAT number is the same as the old one`, async () => {
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        telegramChatId: 'xxx',
+        vatNumber: 'xxx',
+        newVatNumber: 'xxx'
+      },
+      params: {
+        action: 'update'
+      }
+    });
+
+    // Assert.
+    expect(testContext.context.res?.status).to.equal(204);
+  });
+
+  it(`'update' should result in 204 and persisted changes in db`, async () => {
+    // Arrange.
+    await db.addVatRequest(fakeVatRequest1, new Date(0));
+
+    // Act.
+    await httpAdminApi(testContext.context, {
+      query: {
+        telegramChatId: '123',
+        vatNumber: 'AA12345678',
+        newVatNumber: 'BB87654321'
+      },
+      params: {
+        action: 'update'
+      }
+    });
+
+    // Assert.
+    const updatedVatRequest = await db.findVatRequest({
+      telegramChatId: '123',
+      countryCode: 'BB',
+      vatNumber: '87654321'
+    });
+
+    expect(testContext.context.res?.status).to.equal(204);
+    expect(updatedVatRequest).to.be.not.null;
+  });
+
   afterEach(async () => {
     testContext.tearDown();
     testTg.tearDown();

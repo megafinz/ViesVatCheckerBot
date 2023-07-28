@@ -5,7 +5,8 @@ import {
   listErrors,
   removeError,
   resolveAllErrors,
-  resolveError
+  resolveError,
+  update
 } from './handlers';
 
 type Action =
@@ -13,13 +14,15 @@ type Action =
   | 'listErrors'
   | 'resolveError'
   | 'resolveAllErrors'
-  | 'removeError';
+  | 'removeError'
+  | 'update';
 const allowedActions: Action[] = [
   'list',
   'listErrors',
   'resolveError',
   'resolveAllErrors',
-  'removeError'
+  'removeError',
+  'update'
 ];
 
 const httpTrigger: AzureFunction = async function (
@@ -67,6 +70,17 @@ const httpTrigger: AzureFunction = async function (
     case 'removeError': {
       const errorId = req.query.errorId || req.body?.errorId;
       context.res = { ...(await removeError(context.log, errorId)) };
+      return;
+    }
+
+    case 'update': {
+      const telegramChatId =
+        req.query.telegramChatId || req.body?.telegramChatId;
+      const vatNumber = req.query.vatNumber || req.body?.vatNumber;
+      const newVatNumber = req.query.newVatNumber || req.body?.newVatNumber;
+      context.res = {
+        ...(await update(context.log, telegramChatId, vatNumber, newVatNumber))
+      };
       return;
     }
   }

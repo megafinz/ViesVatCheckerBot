@@ -1,6 +1,11 @@
 import { Schema, connect, isValidObjectId, model } from 'mongoose';
 import { cfg } from '../lib/cfg';
-import type { PendingVatRequest, VatRequest, VatRequestError } from '../models';
+import type {
+  PendingVatRequest,
+  VatRequest,
+  VatRequestError,
+  VatRequestUpdate
+} from '../models';
 import { DbError } from './errors';
 import { addDays } from './utils';
 
@@ -85,14 +90,8 @@ export async function tryAddUniqueVatRequest(
 export async function findVatRequest(
   doc: VatRequest
 ): Promise<PendingVatRequest> {
-  return await dbCall(async () => {
-    const result = await VatRequestModel.findOne({
-      telegramChatId: doc.telegramChatId,
-      countryCode: doc.countryCode,
-      vatNumber: doc.vatNumber
-    });
-    return modelToVatRequest(result);
-  });
+  const result = await findVatRequestModel(doc);
+  return modelToVatRequest(result);
 }
 
 export async function removeVatRequest(doc: VatRequest): Promise<boolean> {
@@ -249,6 +248,22 @@ export async function getAllVatRequestErrors(): Promise<VatRequestError[]> {
   });
 }
 
+export async function updateVatRequest(
+  doc: VatRequest,
+  update: VatRequestUpdate
+): Promise<boolean> {
+  return await dbCall(async () => {
+    const vatRequest = await findVatRequestModel(doc);
+    if (!vatRequest) {
+      return false;
+    }
+    vatRequest.countryCode = update.countryCode;
+    vatRequest.vatNumber = update.vatNumber;
+    await vatRequest.save();
+    return true;
+  });
+}
+
 async function dbCall<TOutput>(fn: () => Promise<TOutput>) {
   // TODO: Polly?
   try {
@@ -271,6 +286,16 @@ async function withTransaction<TOutput>(fn: () => Promise<TOutput>) {
   } finally {
     await session.endSession();
   }
+}
+
+async function findVatRequestModel(doc: VatRequest) {
+  return await dbCall(async () => {
+    return await VatRequestModel.findOne({
+      telegramChatId: doc.telegramChatId,
+      countryCode: doc.countryCode,
+      vatNumber: doc.vatNumber
+    });
+  });
 }
 
 function modelToVatRequest(m: any): PendingVatRequest {
