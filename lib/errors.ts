@@ -32,7 +32,6 @@ export type ViesErrorType =
   | 'MS_MAX_CONCURRENT_REQ'
   | 'GLOBAL_MAX_CONCURRENT_REQ'
   | 'TIMEOUT'
-  | 'TIMEDOUT'
   | 'CONNECTION_ERROR'
   | 'INVALID_INPUT';
 
@@ -42,7 +41,6 @@ export const RecoverableViesErrorTypes: ViesErrorType[] = [
   'MS_MAX_CONCURRENT_REQ',
   'GLOBAL_MAX_CONCURRENT_REQ',
   'TIMEOUT',
-  'TIMEDOUT',
   'CONNECTION_ERROR'
 ];
 
@@ -64,6 +62,8 @@ export class ViesError extends BaseError {
       this._type = 'SERVICE_UNAVAILABLE';
     } else if (!this._type && message?.includes('ECONNRESET')) {
       this._type = 'CONNECTION_ERROR';
+    } else if (!this._type && message?.includes('ETIMEDOUT')) {
+      this._type = 'TIMEOUT';
     }
   }
 
