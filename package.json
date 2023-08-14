@@ -42,7 +42,7 @@
     "dotenv": "^16.0.1",
     "express": "^4.18.1",
     "mongodb-memory-server": "^8.7.0",
-    "mongoose": "^6.3.3",
+    "mongoose": "^7.4.3",
     "soap": "^0.43.0",
     "telegraf": "^4.8.2",
     "zod": "3.21.4"
