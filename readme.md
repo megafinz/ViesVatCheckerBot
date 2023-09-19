@@ -31,7 +31,7 @@ There are 4 functions:
 
 - **TimerTrigger**: Timer Trigger that checks all pending VAT numbers once an hour and notifies Telegram users when those numbers become valid. If **TimerTrigger** encounters unrecoverable error, it will put the VAT number in question into a separate DB collection (`VatRequestErrors`) which you can use to investigate the source of the issue and maybe re-register the VAT number for monitoring after the issue was resolved.
 
-- **HttpManualErrorResolutionApi**: HTTP Trigger that you can use to manually re-register VAT numbers that encountered unrecoverable errors during validation process.
+- **HttpAdminApi**: HTTP Trigger that you can use to manually re-register VAT numbers that encountered unrecoverable errors during validation process.
 
 ## Run/Debug
 
