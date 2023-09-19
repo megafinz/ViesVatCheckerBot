@@ -174,7 +174,7 @@ export async function update(
 
   // TODO: validate new VAT number
 
-  log(`Updaing VAT Request with number '${vatNumber}' to '${newVatNumber}'.`);
+  log(`Updating VAT Request with number '${vatNumber}' to '${newVatNumber}'.`);
 
   const { countryCode: oldCountryCode, vatNumber: oldVatNumber } =
     parseVatNumber(vatNumber);
