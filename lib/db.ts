@@ -7,7 +7,7 @@ import type {
   VatRequestUpdate
 } from '../models';
 import { DbError } from './errors';
-import { addDays } from './utils';
+import { addDays, errorToString } from './utils';
 
 export type ResolveErrorResult =
   | { type: 'error-not-found' }
@@ -269,7 +269,7 @@ async function dbCall<TOutput>(fn: () => Promise<TOutput>) {
   try {
     return await fn();
   } catch (error) {
-    throw new DbError(error.message || JSON.stringify(error));
+    throw new DbError(errorToString(error));
   }
 }
 

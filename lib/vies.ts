@@ -2,15 +2,16 @@ import * as soap from 'soap';
 import type { VatRequest } from '../models';
 import { cfg } from './cfg';
 import { ViesError } from './errors';
+import { errorToString } from './utils';
 
-let vies = null;
+let vies: soap.Client = null;
 
 export async function init() {
   if (!vies) {
     try {
       vies = await soap.createClientAsync(cfg.vies.url);
     } catch (error) {
-      throw new ViesError(error.message || JSON.stringify(error));
+      throw new ViesError(errorToString(error));
     }
   }
 }
@@ -23,6 +24,6 @@ export async function checkVatNumber(vatRequest: VatRequest) {
     });
     return result[0];
   } catch (error) {
-    throw new ViesError(error.message || JSON.stringify(error));
+    throw new ViesError(errorToString(error));
   }
 }

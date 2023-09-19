@@ -10,6 +10,15 @@ export function addDays(date: Date, days: number): Date {
   return result;
 }
 
+export function errorToString(error: any) {
+  try {
+    return error.message || JSON.stringify(error)
+  } catch (anotherError) {
+    const errorKeys = Object.keys(error);
+    throw new Error(`Failed to represent error as string, but here are it's keys: ${errorKeys.join(', ')}`)
+  }
+}
+
 export interface Logger {
   (..._: any[]): void;
 }

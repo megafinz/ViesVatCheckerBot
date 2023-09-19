@@ -1,6 +1,7 @@
 import { default as axios } from 'axios';
 import { cfg } from './cfg';
 import { TelegramError } from './errors';
+import { errorToString } from './utils';
 
 export async function sendMessage(
   chatId: string,
@@ -14,6 +15,6 @@ export async function sendMessage(
       text: message
     });
   } catch (error) {
-    throw new TelegramError(error.message || JSON.stringify(error));
+    throw new TelegramError(errorToString(error));
   }
 }
