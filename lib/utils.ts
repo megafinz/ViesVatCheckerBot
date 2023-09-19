@@ -12,10 +12,18 @@ export function addDays(date: Date, days: number): Date {
 
 export function errorToString(error: any) {
   try {
-    return error.message || JSON.stringify(error)
+    return (
+      error.message ||
+      (error.fault && JSON.stringify(error.fault)) ||
+      JSON.stringify(error)
+    );
   } catch (anotherError) {
     const errorKeys = Object.keys(error);
-    throw new Error(`Failed to represent error as string, but here are it's keys: ${errorKeys.join(', ')}`)
+    throw new Error(
+      `Failed to represent error as string, but here are it's keys: ${errorKeys.join(
+        ', '
+      )}`
+    );
   }
 }
 
