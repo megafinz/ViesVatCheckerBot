@@ -1,3 +1,5 @@
+import { ViesError } from './errors';
+
 export function parseVatNumber(vatNumberString: string) {
   const countryCode = vatNumberString.substring(0, 2).toUpperCase();
   const vatNumber = vatNumberString.substring(2);
@@ -15,11 +17,12 @@ export function errorToString(error: any) {
     return (
       error.message ||
       (error.fault && JSON.stringify(error.fault)) ||
+      (error.Fault && JSON.stringify(error.Fault)) ||
       JSON.stringify(error)
     );
   } catch (anotherError) {
     const errorKeys = Object.keys(error);
-    throw new Error(
+    throw new ViesError(
       `Failed to represent error as string, but here are it's keys: ${errorKeys.join(
         ', '
       )}`

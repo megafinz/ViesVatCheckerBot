@@ -52,12 +52,12 @@ const timerTrigger: AzureFunction = async function (
       }
     } catch (error) {
       if (isRecoverableError(error)) {
-        context.log(error);
+        context.log.warn(error);
         // TODO: retry?
         return;
       }
 
-      context.log(
+      context.log.error(
         `ERROR, putting VAT number ${vatRequest.countryCode}${vatRequest.vatNumber} into the error bin`,
         error
       );
