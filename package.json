@@ -13,7 +13,7 @@
     "prepare": "husky install"
   },
   "devDependencies": {
-    "@azure/functions": "^3.5.1",
+    "@azure/functions": "^4.0.1",
     "@types/chai": "^4.3.6",
     "@types/express": "^4.17.20",
     "@types/mocha": "^10.0.1",
