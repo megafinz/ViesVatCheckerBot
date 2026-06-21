@@ -7,5 +7,9 @@
     "build": "bun build src/index.ts --outfile=dist/index.js --target=bun",
     "test": "bun test",
     "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@viesvatchecker/db": "workspace:*",
+    "mongodb": "6.21.0"
   }
 }
