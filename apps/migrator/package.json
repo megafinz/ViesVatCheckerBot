@@ -1,0 +1,11 @@
+{
+  "name": "@viesvatchecker/migrator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/index.ts --outfile=dist/index.js --target=bun",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

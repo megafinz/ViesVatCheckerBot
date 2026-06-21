@@ -1,0 +1,60 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "viesvatchecker",
+      "devDependencies": {
+        "@types/bun": "1.3.14",
+        "typescript": "5.2.2",
+      },
+    },
+    "apps/admin-web": {
+      "name": "@viesvatchecker/admin-web",
+      "version": "0.0.0",
+    },
+    "apps/backend": {
+      "name": "@viesvatchecker/backend",
+      "version": "0.0.0",
+    },
+    "apps/migrator": {
+      "name": "@viesvatchecker/migrator",
+      "version": "0.0.0",
+    },
+    "packages/config": {
+      "name": "@viesvatchecker/config",
+      "version": "0.0.0",
+    },
+    "packages/core": {
+      "name": "@viesvatchecker/core",
+      "version": "0.0.0",
+    },
+    "packages/db": {
+      "name": "@viesvatchecker/db",
+      "version": "0.0.0",
+    },
+  },
+  "packages": {
+    "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
+
+    "@types/node": ["@types/node@26.0.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-vf2YFi1iY9lHGwNJMs01biZFbKJkrZR1T6/MlzjhJLPdntOHLhTrDSnSVcdtvjihi4VQNlrFRIxLsDBlQpAipA=="],
+
+    "@viesvatchecker/admin-web": ["@viesvatchecker/admin-web@workspace:apps/admin-web"],
+
+    "@viesvatchecker/backend": ["@viesvatchecker/backend@workspace:apps/backend"],
+
+    "@viesvatchecker/config": ["@viesvatchecker/config@workspace:packages/config"],
+
+    "@viesvatchecker/core": ["@viesvatchecker/core@workspace:packages/core"],
+
+    "@viesvatchecker/db": ["@viesvatchecker/db@workspace:packages/db"],
+
+    "@viesvatchecker/migrator": ["@viesvatchecker/migrator@workspace:apps/migrator"],
+
+    "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
+
+    "typescript": ["typescript@5.2.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-mI4WrpHsbCIcwT9cF4FZvr80QUeKvsUsUvKDoR+X/7XHQH98xYD8YHZg7ANtz2GtZt/CBq2QJ0thkGJMHfqc1w=="],
+
+    "undici-types": ["undici-types@8.3.0", "", {}, "sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ=="],
+  }
+}
