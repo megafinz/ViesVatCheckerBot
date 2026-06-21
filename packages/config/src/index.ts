@@ -45,6 +45,7 @@ const BackendEnvSchema = z.object({
   TG_ADMIN_CHAT_ID: envString.optional(),
   TG_BOT_TOKEN: envString,
   TG_POLLING_ENABLED: envBoolean.default(true),
+  TG_POLLING_INTERVAL_MS: envNumber.default(1000),
   VAT_NUMBER_EXPIRATION_DAYS: envNumber.default(90),
   VIES_URL: envUrl
 });
@@ -71,6 +72,7 @@ export type BackendConfig = {
   nodeEnv: 'development' | 'test' | 'production';
   telegram: {
     botToken: string;
+    pollingIntervalMs: number;
     pollingEnabled: boolean;
   };
   vatNumbers: {
@@ -118,6 +120,7 @@ export function parseBackendConfig(env: Env = process.env): BackendConfig {
     nodeEnv: parsed.data.NODE_ENV,
     telegram: {
       botToken: parsed.data.TG_BOT_TOKEN,
+      pollingIntervalMs: parsed.data.TG_POLLING_INTERVAL_MS,
       pollingEnabled: parsed.data.TG_POLLING_ENABLED
     },
     vatNumbers: {

@@ -27,6 +27,7 @@ test('parses required backend environment', () => {
     PORT: '8081',
     TG_ADMIN_CHAT_ID: '123',
     TG_BOT_TOKEN: 'telegram-token',
+    TG_POLLING_INTERVAL_MS: '1500',
     VAT_NUMBER_EXPIRATION_DAYS: '30',
     VIES_URL: 'https://example.com/vies.wsdl'
   });
@@ -53,6 +54,7 @@ test('parses required backend environment', () => {
     nodeEnv: 'production',
     telegram: {
       botToken: 'telegram-token',
+      pollingIntervalMs: 1500,
       pollingEnabled: true
     },
     vatNumbers: {
@@ -79,6 +81,7 @@ test('uses defaults for optional backend environment', () => {
   expect(config.http).toEqual({ host: '0.0.0.0', port: 8080 });
   expect(config.nodeEnv).toBe('development');
   expect(config.telegram.pollingEnabled).toBe(true);
+  expect(config.telegram.pollingIntervalMs).toBe(1000);
   expect(config.vatNumbers).toEqual({
     expirationDays: 90,
     maxPendingPerUser: 10
