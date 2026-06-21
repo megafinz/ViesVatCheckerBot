@@ -1,0 +1,12 @@
+.git
+.github
+.husky
+.vscode
+docs
+dist
+node_modules
+**/dist
+**/*.tsbuildinfo
+.env
+.env.*
+!.env.example

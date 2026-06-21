@@ -1,0 +1,84 @@
+x-backend-env: &backend-env
+  DATABASE_HOST: db
+  DATABASE_NAME: ${DATABASE_NAME:-viesvatchecker}
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD:-viesvatchecker}
+  DATABASE_PORT: 5432
+  DATABASE_USER: ${DATABASE_USER:-viesvatchecker}
+  INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?Set INTERNAL_API_TOKEN}
+  MAX_PENDING_VAT_NUMBERS_PER_USER: ${MAX_PENDING_VAT_NUMBERS_PER_USER:-10}
+  NODE_ENV: production
+  NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS: ${NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS:-false}
+  TG_ADMIN_CHAT_ID: ${TG_ADMIN_CHAT_ID:-}
+  TG_BOT_TOKEN: ${TG_BOT_TOKEN:?Set TG_BOT_TOKEN}
+  VAT_NUMBER_EXPIRATION_DAYS: ${VAT_NUMBER_EXPIRATION_DAYS:-90}
+  VIES_URL: ${VIES_URL:-https://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl}
+
+services:
+  db:
+    image: postgres:18.1-alpine
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-viesvatchecker}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-viesvatchecker}
+      POSTGRES_USER: ${DATABASE_USER:-viesvatchecker}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "${DATABASE_PUBLISHED_PORT:-54329}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  backend:
+    image: viesvatchecker-backend:local
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      <<: *backend-env
+      HOST: 0.0.0.0
+      PORT: 8080
+      TG_POLLING_ENABLED: ${TG_POLLING_ENABLED:-true}
+      TG_POLLING_INTERVAL_MS: ${TG_POLLING_INTERVAL_MS:-1000}
+    ports:
+      - "${HTTP_PUBLISHED_PORT:-8080}:8080"
+    restart: unless-stopped
+
+  pending-vat-worker:
+    image: viesvatchecker-pending-vat-worker:local
+    build:
+      context: .
+      dockerfile: apps/pending-vat-worker/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      <<: *backend-env
+    profiles:
+      - jobs
+
+  legacy-mongo-migrator:
+    image: viesvatchecker-legacy-mongo-migrator:local
+    build:
+      context: .
+      dockerfile: apps/legacy-mongo-migrator/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_HOST: db
+      DATABASE_NAME: ${DATABASE_NAME:-viesvatchecker}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-viesvatchecker}
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:-viesvatchecker}
+      DATABASE_URL: postgres://${DATABASE_USER:-viesvatchecker}:${DATABASE_PASSWORD:-viesvatchecker}@db:5432/${DATABASE_NAME:-viesvatchecker}
+      MONGODB_CONNECTION_STRING: ${MONGODB_CONNECTION_STRING:?Set MONGODB_CONNECTION_STRING}
+    profiles:
+      - migration
+
+volumes:
+  postgres-data:
