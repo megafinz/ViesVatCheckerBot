@@ -1,4 +1,11 @@
-import { type BackendConfig, parseBackendConfig } from '@viesvatchecker/config';
+import {
+  buildDatabaseUrl,
+  createTelegramApi,
+  createViesHttpClient,
+  type TelegramMessenger,
+  type TelegramPollingApi
+} from '@viesvatchecker/adapters';
+import { parseBackendConfig } from '@viesvatchecker/config';
 import type {
   PendingVatRequest,
   VatRequest,
@@ -14,13 +21,10 @@ import {
   createCoreVatRequestRepository,
   type VatRequestRepositoryWithExpiration
 } from './repository-adapter';
-import { createTelegramApi } from './telegram-api';
-import { pollTelegramOnce, type TelegramPollingApi } from './telegram-polling';
-import {
-  handleTelegramUpdate,
-  type TelegramMessenger
-} from './telegram-updates';
-import { createViesHttpClient } from './vies-client';
+import { pollTelegramOnce } from './telegram-polling';
+import { handleTelegramUpdate } from './telegram-updates';
+
+export { buildDatabaseUrl } from '@viesvatchecker/adapters';
 
 interface RuntimeConfig {
   expirationDays: number;
@@ -80,12 +84,6 @@ export function createBackendRuntime(options: BackendRuntimeOptions) {
     app,
     stop: stopPolling
   };
-}
-
-export function buildDatabaseUrl(config: BackendConfig['database']): string {
-  const user = encodeURIComponent(config.user);
-  const password = encodeURIComponent(config.password);
-  return `postgres://${user}:${password}@${config.host}:${config.port}/${config.name}`;
 }
 
 export async function startBackend(env: NodeJS.ProcessEnv = process.env) {

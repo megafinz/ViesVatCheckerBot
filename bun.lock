@@ -19,6 +19,7 @@
       "name": "@viesvatchecker/backend",
       "version": "0.0.0",
       "dependencies": {
+        "@viesvatchecker/adapters": "workspace:*",
         "@viesvatchecker/config": "workspace:*",
         "@viesvatchecker/core": "workspace:*",
         "@viesvatchecker/db": "workspace:*",
@@ -31,6 +32,24 @@
       "dependencies": {
         "@viesvatchecker/db": "workspace:*",
         "mongodb": "6.21.0",
+      },
+    },
+    "apps/pending-vat-worker": {
+      "name": "@viesvatchecker/pending-vat-worker",
+      "version": "0.0.0",
+      "dependencies": {
+        "@viesvatchecker/adapters": "workspace:*",
+        "@viesvatchecker/config": "workspace:*",
+        "@viesvatchecker/core": "workspace:*",
+        "@viesvatchecker/db": "workspace:*",
+      },
+    },
+    "packages/adapters": {
+      "name": "@viesvatchecker/adapters",
+      "version": "0.0.0",
+      "dependencies": {
+        "@viesvatchecker/config": "workspace:*",
+        "@viesvatchecker/core": "workspace:*",
       },
     },
     "packages/config": {
@@ -151,6 +170,8 @@
 
     "@types/whatwg-url": ["@types/whatwg-url@11.0.5", "", { "dependencies": { "@types/webidl-conversions": "*" } }, "sha512-coYR071JRaHa+xoEvvYqvnIHaVqaYrLPbsufM9BF63HkwI5Lgmy2QR8Q5K/lYDYo5AK82wOvSOS0UsLTpTG7uQ=="],
 
+    "@viesvatchecker/adapters": ["@viesvatchecker/adapters@workspace:packages/adapters"],
+
     "@viesvatchecker/admin-web": ["@viesvatchecker/admin-web@workspace:apps/admin-web"],
 
     "@viesvatchecker/backend": ["@viesvatchecker/backend@workspace:apps/backend"],
@@ -162,6 +183,8 @@
     "@viesvatchecker/db": ["@viesvatchecker/db@workspace:packages/db"],
 
     "@viesvatchecker/legacy-mongo-migrator": ["@viesvatchecker/legacy-mongo-migrator@workspace:apps/legacy-mongo-migrator"],
+
+    "@viesvatchecker/pending-vat-worker": ["@viesvatchecker/pending-vat-worker@workspace:apps/pending-vat-worker"],
 
     "ansi-escapes": ["ansi-escapes@7.3.0", "", { "dependencies": { "environment": "^1.0.0" } }, "sha512-BvU8nYgGQBxcmMuEeUEmNTvrMVjJNSH7RgW24vXexN4Ven6qCvy4TntnvlnwnMLTVlcRQQdbRY8NKnaIoeWDNg=="],
 
