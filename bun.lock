@@ -19,8 +19,8 @@
       "name": "@viesvatchecker/backend",
       "version": "0.0.0",
     },
-    "apps/migrator": {
-      "name": "@viesvatchecker/migrator",
+    "apps/legacy-mongo-migrator": {
+      "name": "@viesvatchecker/legacy-mongo-migrator",
       "version": "0.0.0",
       "dependencies": {
         "@viesvatchecker/db": "workspace:*",
@@ -147,7 +147,7 @@
 
     "@viesvatchecker/db": ["@viesvatchecker/db@workspace:packages/db"],
 
-    "@viesvatchecker/migrator": ["@viesvatchecker/migrator@workspace:apps/migrator"],
+    "@viesvatchecker/legacy-mongo-migrator": ["@viesvatchecker/legacy-mongo-migrator@workspace:apps/legacy-mongo-migrator"],
 
     "ansi-escapes": ["ansi-escapes@7.3.0", "", { "dependencies": { "environment": "^1.0.0" } }, "sha512-BvU8nYgGQBxcmMuEeUEmNTvrMVjJNSH7RgW24vXexN4Ven6qCvy4TntnvlnwnMLTVlcRQQdbRY8NKnaIoeWDNg=="],
 

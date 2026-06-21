@@ -18,7 +18,7 @@
     "lint:staged": "lint-staged",
     "dev:backend": "bun --watch apps/backend/src/index.ts",
     "dev:admin-web": "bun --watch apps/admin-web/src/index.ts",
-    "db:migrate": "bun apps/migrator/src/index.ts"
+    "legacy:migrate": "bun apps/legacy-mongo-migrator/src/index.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.0",
