@@ -5,8 +5,16 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "db:generate": "drizzle-kit generate",
     "test": "bun test",
     "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.2",
+    "postgres": "3.4.9"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.10"
   },
   "exports": {
     ".": "./src/index.ts"
