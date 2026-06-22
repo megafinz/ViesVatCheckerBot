@@ -71,7 +71,7 @@ services:
         condition: service_healthy
     environment:
       <<: *backend-env
-      PENDING_VAT_WORKER_CRON: ${PENDING_VAT_WORKER_CRON:-17 * * * *}
+      PENDING_VAT_WORKER_CRON: ${PENDING_VAT_WORKER_CRON:-0 * * * *}
     entrypoint: ["/app/cron-entrypoint.sh"]
     profiles:
       - scheduler
@@ -93,7 +93,7 @@ services:
       DATABASE_PORT: 5432
       DATABASE_USER: ${DATABASE_USER:-viesvatchecker}
       DATABASE_URL: postgres://${DATABASE_USER:-viesvatchecker}:${DATABASE_PASSWORD:-viesvatchecker}@db:5432/${DATABASE_NAME:-viesvatchecker}
-      MONGODB_CONNECTION_STRING: ${MONGODB_CONNECTION_STRING:?Set MONGODB_CONNECTION_STRING}
+      MONGODB_CONNECTION_STRING: ${MONGODB_CONNECTION_STRING:-}
     profiles:
       - migration
 

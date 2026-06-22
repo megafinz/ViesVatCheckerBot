@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-schedule="${PENDING_VAT_WORKER_CRON:-17 * * * *}"
+schedule="${PENDING_VAT_WORKER_CRON:-0 * * * *}"
 env_file="/app/cron.env"
 
 printenv | awk -F= '
