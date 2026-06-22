@@ -16,15 +16,15 @@ test('runDbMigrator applies migrations with the provided database client', async
       return client;
     },
     databaseUrl: 'postgres://user:password@db:5432/viesvatchecker',
-    migrate: async (db) => {
-      calls.push(`migrate:${db.id}`);
+    migrate: async (db, config) => {
+      calls.push(`migrate:${db.id}:${config.migrationsFolder}`);
     }
   });
 
   expect(result).toEqual({ type: 'migrated' });
   expect(calls).toEqual([
     'create:postgres://user:password@db:5432/viesvatchecker',
-    'migrate:db',
+    'migrate:db:packages/db/drizzle',
     'close'
   ]);
 });
@@ -42,6 +42,7 @@ test('runDbMigrator closes the database client when migration fails', async () =
     runDbMigrator({
       createClient: () => client,
       databaseUrl: 'postgres://user:password@db:5432/viesvatchecker',
+      migrationsFolder: 'packages/db/drizzle',
       migrate: async () => {
         throw new Error('migration failed');
       }
@@ -53,6 +54,7 @@ test('runDbMigrator closes the database client when migration fails', async () =
 
 test('startDbMigrator builds a database URL from database-only environment', async () => {
   const urls: string[] = [];
+  const migrationFolders: string[] = [];
 
   await startDbMigrator(
     {
@@ -70,9 +72,12 @@ test('startDbMigrator builds a database URL from database-only environment', asy
           close: async () => {}
         };
       },
-      migrate: async () => {}
+      migrate: async (_db, config) => {
+        migrationFolders.push(config.migrationsFolder);
+      }
     }
   );
 
   expect(urls).toEqual(['postgres://migrator:secret@db:5432/viesvatchecker']);
+  expect(migrationFolders[0]).toEndWith('packages/db/drizzle');
 });

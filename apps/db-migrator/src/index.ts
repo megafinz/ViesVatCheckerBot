@@ -1,6 +1,16 @@
 import { buildDatabaseUrl } from '@viesvatchecker/adapters';
 import { parseDatabaseConfig } from '@viesvatchecker/config';
-import { createPostgresClient, migrateDatabase } from '@viesvatchecker/db';
+import {
+  createPostgresClient,
+  type GeneratedMigrationConfig,
+  migrateGeneratedDatabase
+} from '@viesvatchecker/db';
+
+const sourceMigrationsFolder = new URL(
+  '../../../packages/db/drizzle',
+  import.meta.url
+).pathname;
+const bundledMigrationsFolder = new URL('./drizzle', import.meta.url).pathname;
 
 interface MigratorClient<Db> {
   close(): Promise<void> | void;
@@ -10,7 +20,8 @@ interface MigratorClient<Db> {
 export interface DbMigratorOptions<Db> {
   createClient(databaseUrl: string): MigratorClient<Db>;
   databaseUrl: string;
-  migrate(db: Db): Promise<void>;
+  migrationsFolder?: string;
+  migrate(db: Db, config: GeneratedMigrationConfig): Promise<void>;
 }
 
 export type DbMigratorResult = {
@@ -21,9 +32,10 @@ export async function runDbMigrator<Db>(
   options: DbMigratorOptions<Db>
 ): Promise<DbMigratorResult> {
   const client = options.createClient(options.databaseUrl);
+  const migrationsFolder = options.migrationsFolder ?? 'packages/db/drizzle';
 
   try {
-    await options.migrate(client.db);
+    await options.migrate(client.db, { migrationsFolder });
     return { type: 'migrated' };
   } finally {
     await client.close();
@@ -48,11 +60,13 @@ export async function startDbMigrator<Db>(
 ): Promise<DbMigratorResult> {
   const database = parseDatabaseConfig(env);
   const databaseUrl = buildDatabaseUrl(database);
+  const migrationsFolder = resolveDefaultMigrationsFolder();
 
   if (deps) {
     return await runDbMigrator({
       createClient: deps.createClient,
       databaseUrl,
+      migrationsFolder,
       migrate: deps.migrate
     });
   }
@@ -60,8 +74,17 @@ export async function startDbMigrator<Db>(
   return await runDbMigrator({
     createClient: (url) => createPostgresClient({ url }),
     databaseUrl,
-    migrate: migrateDatabase
+    migrationsFolder,
+    migrate: migrateGeneratedDatabase
   });
+}
+
+export function resolveDefaultMigrationsFolder() {
+  if (import.meta.dir.endsWith('/apps/db-migrator/src')) {
+    return sourceMigrationsFolder;
+  }
+
+  return bundledMigrationsFolder;
 }
 
 if (import.meta.main) {

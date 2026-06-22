@@ -18,6 +18,7 @@
     "lint:staged": "lint-staged",
     "dev:backend": "bun --watch apps/backend/src/index.ts",
     "dev:admin-web": "bun --watch apps/admin-web/src/index.ts",
+    "db:generate": "bun run --filter @viesvatchecker/db db:generate",
     "db:migrate": "bun apps/db-migrator/src/index.ts",
     "worker:pending-vat": "bun apps/pending-vat-worker/src/index.ts",
     "legacy:migrate": "bun apps/legacy-mongo-migrator/src/index.ts"

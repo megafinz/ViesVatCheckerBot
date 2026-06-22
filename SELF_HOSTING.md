@@ -109,6 +109,20 @@ docker compose up -d backend
 docker compose --profile scheduler up -d pending-vat-worker-cron
 ```
 
+## Database Schema Changes
+
+After changing `packages/db/src/schema.ts`, generate a migration:
+
+```sh
+bun run db:generate
+```
+
+Commit the generated files under `packages/db/drizzle`, then apply them with the DB migrator:
+
+```sh
+docker compose run --rm db-migrator
+```
+
 ## Backups
 
 Create a database backup before upgrades or maintenance:

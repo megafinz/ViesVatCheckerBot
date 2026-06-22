@@ -1,5 +1,17 @@
 import { sql } from 'drizzle-orm';
+import { migrate as drizzleMigrate } from 'drizzle-orm/postgres-js/migrator';
 import type { Database } from './client';
+
+export interface GeneratedMigrationConfig {
+  migrationsFolder: string;
+}
+
+export async function migrateGeneratedDatabase(
+  db: Database,
+  config: GeneratedMigrationConfig
+) {
+  await drizzleMigrate(db, config);
+}
 
 export async function migrateDatabase(db: Database) {
   await db.execute(sql`create extension if not exists "pgcrypto"`);

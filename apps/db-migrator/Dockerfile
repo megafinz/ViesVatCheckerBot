@@ -15,6 +15,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=build /app/apps/db-migrator/dist/index.js ./index.js
+COPY --from=build /app/packages/db/drizzle ./drizzle
 
 USER bun
 
