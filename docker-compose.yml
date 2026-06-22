@@ -61,6 +61,23 @@ services:
     profiles:
       - jobs
 
+  pending-vat-worker-cron:
+    image: viesvatchecker-pending-vat-worker:local
+    build:
+      context: .
+      dockerfile: apps/pending-vat-worker/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      <<: *backend-env
+      PENDING_VAT_WORKER_CRON: ${PENDING_VAT_WORKER_CRON:-17 * * * *}
+    entrypoint: ["/app/cron-entrypoint.sh"]
+    profiles:
+      - scheduler
+    restart: unless-stopped
+    user: root
+
   legacy-mongo-migrator:
     image: viesvatchecker-legacy-mongo-migrator:local
     build:

@@ -15,6 +15,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=build /app/apps/pending-vat-worker/dist/index.js ./index.js
+COPY apps/pending-vat-worker/cron-entrypoint.sh ./cron-entrypoint.sh
+RUN chmod +x ./cron-entrypoint.sh
 
 USER bun
 
