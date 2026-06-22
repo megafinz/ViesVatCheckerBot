@@ -5,6 +5,7 @@ This repo can run as a private, self-hosted service without a public domain. Tel
 The durable runtime is:
 
 - `db`: PostgreSQL for VAT requests and processing errors.
+- `db-migrator`: one-shot Bun service that applies database migrations.
 - `backend`: Bun HTTP service plus Telegram polling loop.
 - `pending-vat-worker`: one-shot job that checks pending VAT numbers.
 - `pending-vat-worker-cron`: cron wrapper that runs the pending VAT worker on a schedule.
@@ -50,10 +51,22 @@ Keep real secrets, hostnames, and deployment-specific overrides in `.env` or a p
 
 ## Start The Service
 
-Build and start PostgreSQL plus the backend:
+Build and start PostgreSQL:
 
 ```sh
-docker compose up -d db backend
+docker compose up -d db
+```
+
+Apply database migrations:
+
+```sh
+docker compose run --rm db-migrator
+```
+
+Start the backend:
+
+```sh
+docker compose up -d backend
 ```
 
 Check backend health:
@@ -89,8 +102,10 @@ The default schedule runs once per hour at the top of the hour. Change `PENDING_
 After pulling new code:
 
 ```sh
-docker compose build backend pending-vat-worker
-docker compose up -d db backend
+docker compose build db-migrator backend pending-vat-worker
+docker compose up -d db
+docker compose run --rm db-migrator
+docker compose up -d backend
 docker compose --profile scheduler up -d pending-vat-worker-cron
 ```
 

@@ -50,6 +50,14 @@ const BackendEnvSchema = z.object({
   VIES_URL: envUrl
 });
 
+const DatabaseEnvSchema = z.object({
+  DATABASE_HOST: envString,
+  DATABASE_NAME: envString,
+  DATABASE_PASSWORD: envString,
+  DATABASE_PORT: envNumber.default(5432),
+  DATABASE_USER: envString
+});
+
 export type BackendConfig = {
   admin: {
     notifyOnUnrecoverableErrors: boolean;
@@ -83,6 +91,28 @@ export type BackendConfig = {
     url: string;
   };
 };
+
+export type DatabaseConfig = BackendConfig['database'];
+
+export function parseDatabaseConfig(env: Env = process.env): DatabaseConfig {
+  const preparedEnv = resolveSecretFiles(env, {
+    DATABASE_PASSWORD: 'DATABASE_PASSWORD_FILE'
+  });
+
+  const parsed = DatabaseEnvSchema.safeParse(preparedEnv);
+
+  if (!parsed.success) {
+    throw new Error(formatConfigError(parsed.error));
+  }
+
+  return {
+    host: parsed.data.DATABASE_HOST,
+    name: parsed.data.DATABASE_NAME,
+    password: parsed.data.DATABASE_PASSWORD,
+    port: parsed.data.DATABASE_PORT,
+    user: parsed.data.DATABASE_USER
+  };
+}
 
 export function parseBackendConfig(env: Env = process.env): BackendConfig {
   const preparedEnv = resolveSecretFiles(env, {

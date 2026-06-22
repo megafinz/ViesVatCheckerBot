@@ -30,6 +30,21 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  db-migrator:
+    image: viesvatchecker-db-migrator:local
+    build:
+      context: .
+      dockerfile: apps/db-migrator/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_HOST: db
+      DATABASE_NAME: ${DATABASE_NAME:-viesvatchecker}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-viesvatchecker}
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:-viesvatchecker}
+
   backend:
     image: viesvatchecker-backend:local
     build:

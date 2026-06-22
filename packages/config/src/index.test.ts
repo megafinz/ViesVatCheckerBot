@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'bun:test';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseBackendConfig } from './index';
+import { parseBackendConfig, parseDatabaseConfig } from './index';
 
 const tempDirs: string[] = [];
 
@@ -137,6 +137,40 @@ test('direct environment values take precedence over file fallbacks', () => {
   });
 
   expect(config.database.password).toBe('env-password');
+});
+
+test('parses database configuration without non-database service secrets', () => {
+  const config = parseDatabaseConfig({
+    DATABASE_HOST: 'db',
+    DATABASE_NAME: 'viesvatchecker',
+    DATABASE_PASSWORD: 'postgres-password',
+    DATABASE_PORT: '5432',
+    DATABASE_USER: 'migrator'
+  });
+
+  expect(config).toEqual({
+    host: 'db',
+    name: 'viesvatchecker',
+    password: 'postgres-password',
+    port: 5432,
+    user: 'migrator'
+  });
+});
+
+test('database configuration reads password from file fallback', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'vies-config-'));
+  tempDirs.push(dir);
+  const databasePasswordFile = join(dir, 'database-password');
+  writeFileSync(databasePasswordFile, 'postgres-password\n');
+
+  const config = parseDatabaseConfig({
+    DATABASE_HOST: 'db',
+    DATABASE_NAME: 'viesvatchecker',
+    DATABASE_PASSWORD_FILE: databasePasswordFile,
+    DATABASE_USER: 'migrator'
+  });
+
+  expect(config.password).toBe('postgres-password');
 });
 
 test('reports missing required backend environment by variable name', () => {

@@ -26,6 +26,15 @@
         "elysia": "1.4.29",
       },
     },
+    "apps/db-migrator": {
+      "name": "@viesvatchecker/db-migrator",
+      "version": "0.0.0",
+      "dependencies": {
+        "@viesvatchecker/adapters": "workspace:*",
+        "@viesvatchecker/config": "workspace:*",
+        "@viesvatchecker/db": "workspace:*",
+      },
+    },
     "apps/legacy-mongo-migrator": {
       "name": "@viesvatchecker/legacy-mongo-migrator",
       "version": "0.0.0",
@@ -181,6 +190,8 @@
     "@viesvatchecker/core": ["@viesvatchecker/core@workspace:packages/core"],
 
     "@viesvatchecker/db": ["@viesvatchecker/db@workspace:packages/db"],
+
+    "@viesvatchecker/db-migrator": ["@viesvatchecker/db-migrator@workspace:apps/db-migrator"],
 
     "@viesvatchecker/legacy-mongo-migrator": ["@viesvatchecker/legacy-mongo-migrator@workspace:apps/legacy-mongo-migrator"],
 
