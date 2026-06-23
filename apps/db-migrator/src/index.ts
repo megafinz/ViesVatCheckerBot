@@ -3,6 +3,7 @@ import { parseDatabaseConfig } from '@viesvatchecker/config';
 import {
   createPostgresClient,
   type GeneratedMigrationConfig,
+  grantRuntimeDatabasePrivileges,
   migrateGeneratedDatabase
 } from '@viesvatchecker/db';
 
@@ -20,8 +21,10 @@ interface MigratorClient<Db> {
 export interface DbMigratorOptions<Db> {
   createClient(databaseUrl: string): MigratorClient<Db>;
   databaseUrl: string;
+  grantRuntimeAccess?(db: Db, runtimeDatabaseUser: string): Promise<void>;
   migrationsFolder?: string;
   migrate(db: Db, config: GeneratedMigrationConfig): Promise<void>;
+  runtimeDatabaseUser?: string;
 }
 
 export type DbMigratorResult = {
@@ -36,6 +39,12 @@ export async function runDbMigrator<Db>(
 
   try {
     await options.migrate(client.db, { migrationsFolder });
+    if (options.runtimeDatabaseUser) {
+      await options.grantRuntimeAccess?.(
+        client.db,
+        options.runtimeDatabaseUser
+      );
+    }
     return { type: 'migrated' };
   } finally {
     await client.close();
@@ -44,7 +53,7 @@ export async function runDbMigrator<Db>(
 
 export type StartDbMigratorDependencies<Db> = Pick<
   DbMigratorOptions<Db>,
-  'createClient' | 'migrate'
+  'createClient' | 'grantRuntimeAccess' | 'migrate'
 >;
 
 export async function startDbMigrator(
@@ -61,21 +70,26 @@ export async function startDbMigrator<Db>(
   const database = parseDatabaseConfig(env);
   const databaseUrl = buildDatabaseUrl(database);
   const migrationsFolder = resolveDefaultMigrationsFolder();
+  const runtimeDatabaseUser = env.DATABASE_RUNTIME_USER?.trim() || undefined;
 
   if (deps) {
     return await runDbMigrator({
       createClient: deps.createClient,
       databaseUrl,
+      grantRuntimeAccess: deps.grantRuntimeAccess,
       migrationsFolder,
-      migrate: deps.migrate
+      migrate: deps.migrate,
+      runtimeDatabaseUser
     });
   }
 
   return await runDbMigrator({
     createClient: (url) => createPostgresClient({ url }),
     databaseUrl,
+    grantRuntimeAccess: grantRuntimeDatabasePrivileges,
     migrationsFolder,
-    migrate: migrateGeneratedDatabase
+    migrate: migrateGeneratedDatabase,
+    runtimeDatabaseUser
   });
 }
 

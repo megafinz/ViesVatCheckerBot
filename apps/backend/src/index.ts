@@ -14,7 +14,7 @@ import type {
 import {
   createPostgresClient,
   createVatRequestRepository,
-  migrateDatabase
+  type Database
 } from '@viesvatchecker/db';
 import { createBackendApp } from './app';
 import {
@@ -46,6 +46,36 @@ export interface BackendRuntimeOptions {
   telegram: TelegramPollingApi & TelegramMessenger;
   vies: ViesClient;
 }
+
+interface BackendPostgresClient<Db> {
+  close(): Promise<void> | void;
+  db: Db;
+}
+
+type BackendApp = ReturnType<typeof createBackendRuntime>['app'];
+
+interface BackendServer {
+  stop(): Promise<unknown> | unknown;
+}
+
+export interface StartBackendDependencies<Db> {
+  createPostgresClient(databaseUrl: string): BackendPostgresClient<Db>;
+  createRepository(db: Db): RuntimeRepository;
+  createTelegram(botToken: string): TelegramPollingApi & TelegramMessenger;
+  createVies(url: string): ViesClient;
+  listen(
+    app: BackendApp,
+    options: { hostname: string; port: number }
+  ): BackendServer;
+}
+
+const defaultStartBackendDependencies: StartBackendDependencies<Database> = {
+  createPostgresClient: (url) => createPostgresClient({ url }),
+  createRepository: (db) => createVatRequestRepository(db),
+  createTelegram: (botToken) => createTelegramApi({ botToken }),
+  createVies: (url) => createViesHttpClient({ url }),
+  listen: (app, options) => app.listen(options)
+};
 
 export function createBackendRuntime(options: BackendRuntimeOptions) {
   const app = createBackendApp({
@@ -86,12 +116,28 @@ export function createBackendRuntime(options: BackendRuntimeOptions) {
   };
 }
 
-export async function startBackend(env: NodeJS.ProcessEnv = process.env) {
+export async function startBackend(env?: NodeJS.ProcessEnv): Promise<{
+  app: BackendApp;
+  stop(): Promise<void>;
+}>;
+export async function startBackend<Db>(
+  env: NodeJS.ProcessEnv,
+  deps: StartBackendDependencies<Db>
+): Promise<{
+  app: BackendApp;
+  stop(): Promise<void>;
+}>;
+export async function startBackend<Db>(
+  env: NodeJS.ProcessEnv = process.env,
+  deps?: StartBackendDependencies<Db>
+) {
+  const resolvedDeps =
+    deps ??
+    (defaultStartBackendDependencies as unknown as StartBackendDependencies<Db>);
   const config = parseBackendConfig(env);
-  const postgresClient = createPostgresClient({
-    url: buildDatabaseUrl(config.database)
-  });
-  await migrateDatabase(postgresClient.db);
+  const postgresClient = resolvedDeps.createPostgresClient(
+    buildDatabaseUrl(config.database)
+  );
 
   const runtime = createBackendRuntime({
     config: {
@@ -100,12 +146,12 @@ export async function startBackend(env: NodeJS.ProcessEnv = process.env) {
       pollingEnabled: config.telegram.pollingEnabled,
       pollingIntervalMs: config.telegram.pollingIntervalMs
     },
-    repository: createVatRequestRepository(postgresClient.db),
-    telegram: createTelegramApi({ botToken: config.telegram.botToken }),
-    vies: createViesHttpClient({ url: config.vies.url })
+    repository: resolvedDeps.createRepository(postgresClient.db),
+    telegram: resolvedDeps.createTelegram(config.telegram.botToken),
+    vies: resolvedDeps.createVies(config.vies.url)
   });
 
-  const server = runtime.app.listen({
+  const server = resolvedDeps.listen(runtime.app, {
     hostname: config.http.host,
     port: config.http.port
   });

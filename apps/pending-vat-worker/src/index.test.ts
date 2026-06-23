@@ -1,6 +1,10 @@
 import { expect, test } from 'bun:test';
 import type { PendingVatRequest } from '@viesvatchecker/core';
-import { createPendingVatWorkerRuntime, runPendingVatWorker } from './index';
+import {
+  createPendingVatWorkerRuntime,
+  runPendingVatWorker,
+  startPendingVatWorker
+} from './index';
 
 test('runPendingVatWorker processes pending requests with worker dependencies', async () => {
   const request: PendingVatRequest = {
@@ -90,4 +94,48 @@ test('createPendingVatWorkerRuntime maps config into pending job config', async 
     '123',
     'admin'
   ]);
+});
+
+test('startPendingVatWorker runs without database migrations', async () => {
+  const closed: string[] = [];
+
+  const result = await startPendingVatWorker(
+    {
+      DATABASE_HOST: 'db',
+      DATABASE_NAME: 'viesvatchecker',
+      DATABASE_PASSWORD: 'runtime-secret',
+      DATABASE_PORT: '5432',
+      DATABASE_USER: 'viesvatchecker_runtime',
+      INTERNAL_API_TOKEN: 'internal-token',
+      TG_BOT_TOKEN: 'telegram-token',
+      VIES_URL: 'https://example.com/vies.wsdl'
+    },
+    {
+      createPostgresClient: (url) => {
+        expect(url).toBe(
+          'postgres://viesvatchecker_runtime:runtime-secret@db:5432/viesvatchecker'
+        );
+        return {
+          db: {},
+          close: async () => {
+            closed.push('close');
+          }
+        };
+      },
+      createRepository: () => ({
+        getAllVatRequests: async () => [],
+        removeVatRequest: async () => false,
+        demoteVatRequestToError: async () => null
+      }),
+      createTelegram: () => ({
+        sendMessage: async () => {}
+      }),
+      createVies: () => ({
+        checkVatNumber: async () => ({ valid: false })
+      })
+    }
+  );
+
+  expect(result).toEqual({ type: 'processed', processedCount: 0 });
+  expect(closed).toEqual(['close']);
 });

@@ -14,7 +14,7 @@ import {
 import {
   createPostgresClient,
   createVatRequestRepository,
-  migrateDatabase
+  type Database
 } from '@viesvatchecker/db';
 
 export interface PendingVatWorkerRuntimeOptions {
@@ -24,6 +24,30 @@ export interface PendingVatWorkerRuntimeOptions {
   telegram: TelegramMessenger;
   vies: PendingVatJobDependencies['vies'];
 }
+
+interface PendingVatWorkerPostgresClient<Db> {
+  close(): Promise<void> | void;
+  db: Db;
+}
+
+export interface StartPendingVatWorkerDependencies<Db> {
+  createPostgresClient(databaseUrl: string): PendingVatWorkerPostgresClient<Db>;
+  createRepository(db: Db): PendingVatRequestRepository;
+  createTelegram(botToken: string): TelegramMessenger;
+  createVies(url: string): PendingVatJobDependencies['vies'];
+}
+
+const defaultStartPendingVatWorkerDependencies: StartPendingVatWorkerDependencies<Database> =
+  {
+    createPostgresClient: (url) =>
+      createPostgresClient({
+        url,
+        maxConnections: 1
+      }),
+    createRepository: (db) => createVatRequestRepository(db),
+    createTelegram: (botToken) => createTelegramApi({ botToken }),
+    createVies: (url) => createViesHttpClient({ url })
+  };
 
 export async function runPendingVatWorker(deps: PendingVatJobDependencies) {
   return await processPendingVatRequests(deps);
@@ -50,21 +74,30 @@ export function createPendingVatWorkerRuntime(
 }
 
 export async function startPendingVatWorker(
-  env: NodeJS.ProcessEnv = process.env
+  env?: NodeJS.ProcessEnv
+): Promise<PendingVatJobResult>;
+export async function startPendingVatWorker<Db>(
+  env: NodeJS.ProcessEnv,
+  deps: StartPendingVatWorkerDependencies<Db>
+): Promise<PendingVatJobResult>;
+export async function startPendingVatWorker<Db>(
+  env: NodeJS.ProcessEnv = process.env,
+  deps?: StartPendingVatWorkerDependencies<Db>
 ) {
+  const resolvedDeps =
+    deps ??
+    (defaultStartPendingVatWorkerDependencies as unknown as StartPendingVatWorkerDependencies<Db>);
   const config = parseBackendConfig(env);
-  const postgresClient = createPostgresClient({
-    url: buildDatabaseUrl(config.database),
-    maxConnections: 1
-  });
+  const postgresClient = resolvedDeps.createPostgresClient(
+    buildDatabaseUrl(config.database)
+  );
 
   try {
-    await migrateDatabase(postgresClient.db);
     const runtime = createPendingVatWorkerRuntime({
       config,
-      repository: createVatRequestRepository(postgresClient.db),
-      telegram: createTelegramApi({ botToken: config.telegram.botToken }),
-      vies: createViesHttpClient({ url: config.vies.url })
+      repository: resolvedDeps.createRepository(postgresClient.db),
+      telegram: resolvedDeps.createTelegram(config.telegram.botToken),
+      vies: resolvedDeps.createVies(config.vies.url)
     });
 
     return await runtime.run();

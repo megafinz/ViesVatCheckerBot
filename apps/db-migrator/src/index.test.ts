@@ -29,6 +29,33 @@ test('runDbMigrator applies migrations with the provided database client', async
   ]);
 });
 
+test('runDbMigrator grants runtime database privileges after migrations', async () => {
+  const calls: string[] = [];
+
+  await runDbMigrator({
+    createClient: () => ({
+      db: { id: 'db' },
+      close: async () => {
+        calls.push('close');
+      }
+    }),
+    databaseUrl: 'postgres://migrator:password@db:5432/viesvatchecker',
+    grantRuntimeAccess: async (db, runtimeUser) => {
+      calls.push(`grant:${db.id}:${runtimeUser}`);
+    },
+    migrate: async (db) => {
+      calls.push(`migrate:${db.id}`);
+    },
+    runtimeDatabaseUser: 'viesvatchecker_runtime'
+  });
+
+  expect(calls).toEqual([
+    'migrate:db',
+    'grant:db:viesvatchecker_runtime',
+    'close'
+  ]);
+});
+
 test('runDbMigrator closes the database client when migration fails', async () => {
   const calls: string[] = [];
   const client = {
@@ -55,6 +82,7 @@ test('runDbMigrator closes the database client when migration fails', async () =
 test('startDbMigrator builds a database URL from database-only environment', async () => {
   const urls: string[] = [];
   const migrationFolders: string[] = [];
+  const runtimeUsers: string[] = [];
 
   await startDbMigrator(
     {
@@ -62,6 +90,7 @@ test('startDbMigrator builds a database URL from database-only environment', asy
       DATABASE_NAME: 'viesvatchecker',
       DATABASE_PASSWORD: 'secret',
       DATABASE_PORT: '5432',
+      DATABASE_RUNTIME_USER: 'runtime',
       DATABASE_USER: 'migrator'
     },
     {
@@ -72,6 +101,9 @@ test('startDbMigrator builds a database URL from database-only environment', asy
           close: async () => {}
         };
       },
+      grantRuntimeAccess: async (_db, runtimeUser) => {
+        runtimeUsers.push(runtimeUser);
+      },
       migrate: async (_db, config) => {
         migrationFolders.push(config.migrationsFolder);
       }
@@ -80,4 +112,5 @@ test('startDbMigrator builds a database URL from database-only environment', asy
 
   expect(urls).toEqual(['postgres://migrator:secret@db:5432/viesvatchecker']);
   expect(migrationFolders[0]).toEndWith('packages/db/drizzle');
+  expect(runtimeUsers).toEqual(['runtime']);
 });

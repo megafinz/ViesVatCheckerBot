@@ -13,6 +13,26 @@ export async function migrateGeneratedDatabase(
   await drizzleMigrate(db, config);
 }
 
+export async function grantRuntimeDatabasePrivileges(
+  db: Database,
+  runtimeUser: string
+) {
+  const runtimeRole = sql.raw(quoteIdentifier(runtimeUser));
+
+  await db.execute(
+    sql`grant select, insert, update, delete on all tables in schema public to ${runtimeRole}`
+  );
+  await db.execute(
+    sql`grant usage, select on all sequences in schema public to ${runtimeRole}`
+  );
+  await db.execute(
+    sql`alter default privileges in schema public grant select, insert, update, delete on tables to ${runtimeRole}`
+  );
+  await db.execute(
+    sql`alter default privileges in schema public grant usage, select on sequences to ${runtimeRole}`
+  );
+}
+
 export async function migrateDatabase(db: Database) {
   await db.execute(sql`create extension if not exists "pgcrypto"`);
   await db.execute(sql`
@@ -51,4 +71,8 @@ export async function migrateDatabase(db: Database) {
 export async function resetDatabase(db: Database) {
   await db.execute(sql`drop table if exists vat_request_errors`);
   await db.execute(sql`drop table if exists vat_requests`);
+}
+
+function quoteIdentifier(identifier: string) {
+  return `"${identifier.replaceAll('"', '""')}"`;
 }

@@ -29,7 +29,9 @@ At minimum, set:
 ```sh
 TG_BOT_TOKEN=your-telegram-bot-token
 INTERNAL_API_TOKEN=replace-with-a-long-random-secret
-DATABASE_PASSWORD=replace-with-a-database-password
+DATABASE_SUPERUSER_PASSWORD=replace-with-a-superuser-password
+DATABASE_MIGRATOR_PASSWORD=replace-with-a-migrator-password
+DATABASE_RUNTIME_PASSWORD=replace-with-a-runtime-password
 ```
 
 Useful options:
@@ -38,6 +40,9 @@ Useful options:
 | --- | --- | --- |
 | `HTTP_PUBLISHED_PORT` | `8080` | Host port for the backend health/API server. |
 | `DATABASE_PUBLISHED_PORT` | `54329` | Host port for PostgreSQL. Set only if you need host access. |
+| `DATABASE_SUPERUSER` | `viesvatchecker_superadmin` | PostgreSQL bootstrap owner used by the database container. |
+| `DATABASE_MIGRATOR_USER` | `viesvatchecker_migrator` | Role used by `db-migrator` to apply schema changes. |
+| `DATABASE_RUNTIME_USER` | `viesvatchecker_runtime` | Lower-privilege role used by backend and worker services. |
 | `TG_POLLING_ENABLED` | `true` | Enables Telegram long polling in the backend. |
 | `TG_POLLING_INTERVAL_MS` | `1000` | Delay between polling cycles. |
 | `PENDING_VAT_WORKER_CRON` | `0 * * * *` | Cron schedule for pending VAT checks. |
@@ -62,6 +67,8 @@ Apply database migrations:
 ```sh
 docker compose run --rm db-migrator
 ```
+
+The migrator also grants runtime table and sequence privileges to `DATABASE_RUNTIME_USER` after applying schema changes.
 
 Start the backend:
 
