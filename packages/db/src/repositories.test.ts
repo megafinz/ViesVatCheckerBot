@@ -78,6 +78,10 @@ describe('Postgres repositories', () => {
         expirationDate
       );
 
+      if (added === false) {
+        throw new Error('Expected VAT request to be added.');
+      }
+
       expect(duplicate).toBe(false);
       expect(added).toEqual({
         ...vatRequest,
@@ -160,6 +164,10 @@ describe('Postgres repositories', () => {
         pendingVatRequest,
         'boom'
       );
+
+      if (error === null) {
+        throw new Error('Expected VAT request to be demoted.');
+      }
 
       expect(error).toMatchObject({
         vatRequest: pendingVatRequest,
