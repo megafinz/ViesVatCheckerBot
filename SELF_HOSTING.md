@@ -34,6 +34,18 @@ DATABASE_MIGRATOR_PASSWORD=replace-with-a-migrator-password
 DATABASE_RUNTIME_PASSWORD=replace-with-a-runtime-password
 ```
 
+For container secret stores, you can set file variables instead of direct secret values:
+
+```sh
+TG_BOT_TOKEN_FILE=/run/secrets/tg_bot_token
+INTERNAL_API_TOKEN_FILE=/run/secrets/internal_api_token
+DATABASE_SUPERUSER_PASSWORD_FILE=/run/secrets/db_superuser_password
+DATABASE_MIGRATOR_PASSWORD_FILE=/run/secrets/db_migrator_password
+DATABASE_RUNTIME_PASSWORD_FILE=/run/secrets/db_runtime_password
+```
+
+Mount those files into the relevant containers from your private deployment repo. Direct values take precedence when both forms are set.
+
 Useful options:
 
 | Variable | Default | Purpose |
@@ -43,6 +55,7 @@ Useful options:
 | `DATABASE_SUPERUSER` | `viesvatchecker_superadmin` | PostgreSQL bootstrap owner used by the database container. |
 | `DATABASE_MIGRATOR_USER` | `viesvatchecker_migrator` | Role used by `db-migrator` to apply schema changes. |
 | `DATABASE_RUNTIME_USER` | `viesvatchecker_runtime` | Lower-privilege role used by backend and worker services. |
+| `*_FILE` secrets | empty | Optional file paths for Telegram, internal API, and database passwords. |
 | `TG_POLLING_ENABLED` | `true` | Enables Telegram long polling in the backend. |
 | `TG_POLLING_INTERVAL_MS` | `1000` | Delay between polling cycles. |
 | `PENDING_VAT_WORKER_CRON` | `0 * * * *` | Cron schedule for pending VAT checks. |
