@@ -13,6 +13,7 @@ import type {
 } from '@viesvatchecker/core';
 import {
   createPostgresClient,
+  createVatRequestErrorRepository,
   createVatRequestRepository,
   type Database
 } from '@viesvatchecker/db';
@@ -28,16 +29,28 @@ export { buildDatabaseUrl } from '@viesvatchecker/adapters';
 
 interface RuntimeConfig {
   expirationDays: number;
+  internalApiToken: string;
   maxPendingPerUser: number;
   pollingEnabled: boolean;
   pollingIntervalMs: number;
 }
 
 type RuntimeRepository = VatRequestRepositoryWithExpiration & {
+  getAllVatRequestErrors(): Promise<
+    import('@viesvatchecker/core').VatRequestError[]
+  >;
+  removeVatRequestError(vatRequestErrorId: string): Promise<boolean>;
+  resolveVatRequestError(
+    vatRequestErrorId: string
+  ): Promise<import('@viesvatchecker/db').ResolveVatRequestErrorResult>;
   tryAddUniqueVatRequest(
     request: VatRequest,
     expirationDate: Date
   ): Promise<PendingVatRequest | false>;
+  updateVatRequest(
+    request: VatRequest,
+    update: Pick<VatRequest, 'countryCode' | 'vatNumber'>
+  ): Promise<boolean>;
 };
 
 export interface BackendRuntimeOptions {
@@ -71,7 +84,10 @@ export interface StartBackendDependencies<Db> {
 
 const defaultStartBackendDependencies: StartBackendDependencies<Database> = {
   createPostgresClient: (url) => createPostgresClient({ url }),
-  createRepository: (db) => createVatRequestRepository(db),
+  createRepository: (db) => ({
+    ...createVatRequestRepository(db),
+    ...createVatRequestErrorRepository(db)
+  }),
   createTelegram: (botToken) => createTelegramApi({ botToken }),
   createVies: (url) => createViesHttpClient({ url }),
   listen: (app, options) => app.listen(options)
@@ -79,6 +95,11 @@ const defaultStartBackendDependencies: StartBackendDependencies<Database> = {
 
 export function createBackendRuntime(options: BackendRuntimeOptions) {
   const app = createBackendApp({
+    admin: {
+      internalApiToken: options.config.internalApiToken,
+      repository: options.repository,
+      telegram: options.telegram
+    },
     pollingEnabled: options.config.pollingEnabled
   });
   const coreRepository = createCoreVatRequestRepository({
@@ -142,6 +163,7 @@ export async function startBackend<Db>(
   const runtime = createBackendRuntime({
     config: {
       expirationDays: config.vatNumbers.expirationDays,
+      internalApiToken: config.internalApi.token,
       maxPendingPerUser: config.vatNumbers.maxPendingPerUser,
       pollingEnabled: config.telegram.pollingEnabled,
       pollingIntervalMs: config.telegram.pollingIntervalMs

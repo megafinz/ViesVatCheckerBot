@@ -17,6 +17,7 @@ test('createBackendRuntime creates the health app and leaves polling stopped whe
   const runtime = createBackendRuntime({
     config: {
       expirationDays: 90,
+      internalApiToken: 'internal-token',
       maxPendingPerUser: 10,
       pollingEnabled: false,
       pollingIntervalMs: 1000
@@ -29,7 +30,11 @@ test('createBackendRuntime creates the health app and leaves polling stopped whe
       removeVatRequest: async () => false,
       countVatRequests: async () => 0,
       getAllVatRequests: async () => [],
-      removeAllVatRequests: async () => true
+      removeAllVatRequests: async () => true,
+      getAllVatRequestErrors: async () => [],
+      removeVatRequestError: async () => false,
+      resolveVatRequestError: async () => ({ type: 'error-not-found' }),
+      updateVatRequest: async () => false
     },
     telegram: {
       getUpdates: async () => [],
@@ -50,6 +55,54 @@ test('createBackendRuntime creates the health app and leaves polling stopped whe
     telegramPolling: false
   });
   expect(runtime.stop).toBeTypeOf('function');
+});
+
+test('createBackendRuntime exposes authenticated internal admin routes', async () => {
+  const runtime = createBackendRuntime({
+    config: {
+      expirationDays: 90,
+      internalApiToken: 'internal-token',
+      maxPendingPerUser: 10,
+      pollingEnabled: false,
+      pollingIntervalMs: 1000
+    },
+    repository: {
+      tryAddUniqueVatRequest: async (request) => ({
+        ...request,
+        expirationDate: new Date('2026-09-19T00:00:00.000Z')
+      }),
+      removeVatRequest: async () => false,
+      countVatRequests: async () => 0,
+      getAllVatRequests: async () => [
+        {
+          telegramChatId: '123',
+          countryCode: 'AA',
+          vatNumber: '12345678',
+          expirationDate: new Date('2026-09-19T00:00:00.000Z')
+        }
+      ],
+      removeAllVatRequests: async () => true,
+      getAllVatRequestErrors: async () => [],
+      removeVatRequestError: async () => false,
+      resolveVatRequestError: async () => ({ type: 'error-not-found' }),
+      updateVatRequest: async () => false
+    },
+    telegram: {
+      getUpdates: async () => [],
+      sendMessage: async () => {}
+    },
+    vies: {
+      checkVatNumber: async () => ({ valid: false })
+    }
+  });
+
+  const response = await runtime.app.handle(
+    new Request('http://localhost/internal/admin/vat-requests', {
+      headers: { authorization: 'Bearer internal-token' }
+    })
+  );
+
+  expect(response.status).toBe(200);
 });
 
 test('startBackend starts without running database migrations', async () => {
@@ -88,7 +141,11 @@ test('startBackend starts without running database migrations', async () => {
         removeVatRequest: async () => false,
         countVatRequests: async () => 0,
         getAllVatRequests: async () => [],
-        removeAllVatRequests: async () => true
+        removeAllVatRequests: async () => true,
+        getAllVatRequestErrors: async () => [],
+        removeVatRequestError: async () => false,
+        resolveVatRequestError: async () => ({ type: 'error-not-found' }),
+        updateVatRequest: async () => false
       }),
       createTelegram: () => ({
         getUpdates: async () => [],

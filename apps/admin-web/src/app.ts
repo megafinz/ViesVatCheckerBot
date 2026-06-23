@@ -6,6 +6,11 @@ interface BackendHealth {
   telegramPolling: boolean;
 }
 
+interface AdminSummary {
+  pendingCount?: number;
+  errorCount?: number;
+}
+
 interface AdminWebAppOptions {
   backendUrl: string;
   fetch(request: Request): Promise<Response>;
@@ -14,8 +19,11 @@ interface AdminWebAppOptions {
 
 export function createAdminWebApp(options: AdminWebAppOptions) {
   return new Elysia().get('/', async () => {
-    const health = await getBackendHealth(options);
-    return new Response(renderPage(health), {
+    const [health, summary] = await Promise.all([
+      getBackendHealth(options),
+      getAdminSummary(options)
+    ]);
+    return new Response(renderPage(health, summary), {
       headers: {
         'content-type': 'text/html; charset=utf-8'
       }
@@ -47,11 +55,58 @@ async function getBackendHealth(
   return await response.json();
 }
 
-function renderPage(health: BackendHealth | undefined): string {
+async function getAdminSummary(
+  options: AdminWebAppOptions
+): Promise<AdminSummary> {
+  const [pendingCount, errorCount] = await Promise.all([
+    getListCount('/internal/admin/vat-requests', options),
+    getListCount('/internal/admin/vat-request-errors', options)
+  ]);
+
+  return { errorCount, pendingCount };
+}
+
+async function getListCount(
+  path: string,
+  options: AdminWebAppOptions
+): Promise<number | undefined> {
+  let response: Response;
+  try {
+    response = await options.fetch(
+      new Request(new URL(path, options.backendUrl), {
+        headers: {
+          authorization: `Bearer ${options.internalApiToken}`
+        }
+      })
+    );
+  } catch {
+    return undefined;
+  }
+
+  if (!response.ok) {
+    return undefined;
+  }
+
+  const payload = await response.json();
+  return Array.isArray(payload) ? payload.length : undefined;
+}
+
+function renderPage(
+  health: BackendHealth | undefined,
+  summary: AdminSummary
+): string {
   const backendStatus = health?.ok ? 'Backend online' : 'Backend offline';
   const pollingStatus = health?.telegramPolling
     ? 'Telegram polling on'
     : 'Telegram polling off';
+  const pendingStatus =
+    summary.pendingCount === undefined
+      ? 'Pending unknown'
+      : `${summary.pendingCount} pending`;
+  const errorStatus =
+    summary.errorCount === undefined
+      ? 'Errors unknown'
+      : `${summary.errorCount} error${summary.errorCount === 1 ? '' : 's'}`;
 
   return `<!doctype html>
 <html lang="en">
@@ -146,6 +201,14 @@ function renderPage(health: BackendHealth | undefined): string {
         <article class="status-card">
           <p class="label">Telegram</p>
           <p class="value">${pollingStatus}</p>
+        </article>
+        <article class="status-card">
+          <p class="label">Pending VAT</p>
+          <p class="value">${pendingStatus}</p>
+        </article>
+        <article class="status-card">
+          <p class="label">Errors</p>
+          <p class="value">${errorStatus}</p>
         </article>
       </section>
     </main>

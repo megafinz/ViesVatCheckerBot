@@ -7,11 +7,22 @@ test('renders backend health as online when the backend responds successfully', 
     backendUrl: 'http://backend:8080',
     fetch: async (request) => {
       requests.push(request);
-      return Response.json({
-        ok: true,
-        service: 'viesvatchecker-backend',
-        telegramPolling: true
-      });
+      if (request.url === 'http://backend:8080/health') {
+        return Response.json({
+          ok: true,
+          service: 'viesvatchecker-backend',
+          telegramPolling: true
+        });
+      }
+      if (request.url === 'http://backend:8080/internal/admin/vat-requests') {
+        return Response.json([{ id: 'request-1' }, { id: 'request-2' }]);
+      }
+      if (
+        request.url === 'http://backend:8080/internal/admin/vat-request-errors'
+      ) {
+        return Response.json([{ id: 'error-1' }]);
+      }
+      return new Response('not found', { status: 404 });
     },
     internalApiToken: 'internal-token'
   });
@@ -22,11 +33,23 @@ test('renders backend health as online when the backend responds successfully', 
   expect(response.status).toBe(200);
   expect(html).toContain('Backend online');
   expect(html).toContain('Telegram polling on');
-  expect(requests).toHaveLength(1);
+  expect(html).toContain('2 pending');
+  expect(html).toContain('1 error');
+  expect(requests).toHaveLength(3);
   expect(requests[0].url).toBe('http://backend:8080/health');
-  expect(requests[0].headers.get('authorization')).toBe(
-    'Bearer internal-token'
+  expect(requests[1].url).toBe(
+    'http://backend:8080/internal/admin/vat-requests'
   );
+  expect(requests[2].url).toBe(
+    'http://backend:8080/internal/admin/vat-request-errors'
+  );
+  expect(
+    requests.map((request) => request.headers.get('authorization'))
+  ).toEqual([
+    'Bearer internal-token',
+    'Bearer internal-token',
+    'Bearer internal-token'
+  ]);
 });
 
 test('renders backend health as offline when the backend check fails', async () => {
