@@ -50,6 +50,13 @@ const BackendEnvSchema = z.object({
   VIES_URL: envUrl
 });
 
+const AdminWebEnvSchema = z.object({
+  ADMIN_BACKEND_URL: envUrl,
+  HOST: envString.default('0.0.0.0'),
+  INTERNAL_API_TOKEN: envString,
+  PORT: envNumber.default(8081)
+});
+
 const DatabaseEnvSchema = z.object({
   DATABASE_HOST: envString,
   DATABASE_NAME: envString,
@@ -93,6 +100,19 @@ export type BackendConfig = {
 };
 
 export type DatabaseConfig = BackendConfig['database'];
+
+export type AdminWebConfig = {
+  backend: {
+    url: string;
+  };
+  http: {
+    host: string;
+    port: number;
+  };
+  internalApi: {
+    token: string;
+  };
+};
 
 export function parseDatabaseConfig(env: Env = process.env): DatabaseConfig {
   const preparedEnv = resolveSecretFiles(env, {
@@ -159,6 +179,31 @@ export function parseBackendConfig(env: Env = process.env): BackendConfig {
     },
     vies: {
       url: parsed.data.VIES_URL
+    }
+  };
+}
+
+export function parseAdminWebConfig(env: Env = process.env): AdminWebConfig {
+  const preparedEnv = resolveSecretFiles(env, {
+    INTERNAL_API_TOKEN: 'INTERNAL_API_TOKEN_FILE'
+  });
+
+  const parsed = AdminWebEnvSchema.safeParse(preparedEnv);
+
+  if (!parsed.success) {
+    throw new Error(formatConfigError(parsed.error));
+  }
+
+  return {
+    backend: {
+      url: parsed.data.ADMIN_BACKEND_URL
+    },
+    http: {
+      host: parsed.data.HOST,
+      port: parsed.data.PORT
+    },
+    internalApi: {
+      token: parsed.data.INTERNAL_API_TOKEN
     }
   };
 }

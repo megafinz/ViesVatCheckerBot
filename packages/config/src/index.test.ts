@@ -2,7 +2,11 @@ import { afterEach, expect, test } from 'bun:test';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseBackendConfig, parseDatabaseConfig } from './index';
+import {
+  parseAdminWebConfig,
+  parseBackendConfig,
+  parseDatabaseConfig
+} from './index';
 
 const tempDirs: string[] = [];
 
@@ -155,6 +159,43 @@ test('parses database configuration without non-database service secrets', () =>
     port: 5432,
     user: 'migrator'
   });
+});
+
+test('parses required admin web environment', () => {
+  const config = parseAdminWebConfig({
+    ADMIN_BACKEND_URL: 'http://backend:8080',
+    HOST: '127.0.0.1',
+    INTERNAL_API_TOKEN: 'internal-token',
+    PORT: '18081'
+  });
+
+  expect(config).toEqual({
+    backend: {
+      url: 'http://backend:8080'
+    },
+    http: {
+      host: '127.0.0.1',
+      port: 18081
+    },
+    internalApi: {
+      token: 'internal-token'
+    }
+  });
+});
+
+test('admin web configuration reads internal API token from file fallback', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'vies-config-'));
+  tempDirs.push(dir);
+  const internalTokenFile = join(dir, 'internal-token');
+  writeFileSync(internalTokenFile, 'internal-token\n');
+
+  const config = parseAdminWebConfig({
+    ADMIN_BACKEND_URL: 'http://backend:8080',
+    INTERNAL_API_TOKEN_FILE: internalTokenFile
+  });
+
+  expect(config.http).toEqual({ host: '0.0.0.0', port: 8081 });
+  expect(config.internalApi.token).toBe('internal-token');
 });
 
 test('database configuration reads password from file fallback', () => {
