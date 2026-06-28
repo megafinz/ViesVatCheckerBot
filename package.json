@@ -9,19 +9,20 @@
   ],
   "scripts": {
     "build": "bun run --filter '*' build",
-    "test": "bun run --filter '*' test && bun test docker",
-    "typecheck": "bun run --filter '*' typecheck",
-    "format": "biome format --write apps packages docker package.json tsconfig.json bunfig.toml biome.json",
-    "format:check": "biome format apps packages docker package.json tsconfig.json bunfig.toml biome.json",
-    "lint": "biome lint apps packages docker package.json tsconfig.json bunfig.toml biome.json",
-    "lint:fix": "biome check --write apps packages docker package.json tsconfig.json bunfig.toml biome.json",
+    "test": "bun run --filter '*' test && bun test docker scripts",
+    "typecheck": "bun run --filter '*' typecheck && tsc --noEmit -p tsconfig.scripts.json",
+    "format": "biome format --write apps packages docker scripts package.json tsconfig.json tsconfig.scripts.json bunfig.toml biome.json",
+    "format:check": "biome format apps packages docker scripts package.json tsconfig.json tsconfig.scripts.json bunfig.toml biome.json",
+    "lint": "biome lint apps packages docker scripts package.json tsconfig.json tsconfig.scripts.json bunfig.toml biome.json",
+    "lint:fix": "biome check --write apps packages docker scripts package.json tsconfig.json tsconfig.scripts.json bunfig.toml biome.json",
     "lint:staged": "lint-staged",
     "dev:backend": "bun --watch apps/backend/src/index.ts",
     "dev:admin-web": "bun --watch apps/admin-web/src/index.ts",
     "db:generate": "bun run --filter @viesvatchecker/db db:generate",
     "db:migrate": "bun apps/db-migrator/src/index.ts",
     "worker:pending-vat": "bun apps/pending-vat-worker/src/index.ts",
-    "legacy:migrate": "bun apps/legacy-mongo-migrator/src/index.ts"
+    "legacy:migrate": "bun apps/legacy-mongo-migrator/src/index.ts",
+    "smoke:compose": "bun scripts/compose-smoke.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.0",
