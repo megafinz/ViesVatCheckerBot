@@ -70,7 +70,6 @@ describe('processPendingVatRequests', () => {
           sentMessages.push({ telegramChatId, message });
         }
       },
-      config: {},
       now: () => new Date('2026-06-21T00:00:00.000Z')
     });
 
@@ -101,7 +100,6 @@ describe('processPendingVatRequests', () => {
           sentMessages.push({ telegramChatId, message });
         }
       },
-      config: {},
       now: () => new Date('2026-07-02T00:00:00.000Z')
     });
 
@@ -127,7 +125,6 @@ describe('processPendingVatRequests', () => {
           sentMessages.push({ telegramChatId, message });
         }
       },
-      config: {},
       now: () => new Date('2026-06-21T00:00:00.000Z')
     });
 
@@ -151,7 +148,6 @@ describe('processPendingVatRequests', () => {
           sentMessages.push({ telegramChatId, message });
         }
       },
-      config: {},
       now: () => new Date('2026-06-21T00:00:00.000Z')
     });
 
@@ -172,7 +168,6 @@ describe('processPendingVatRequests', () => {
           throw new Error('unexpected parser failure');
         }
       },
-      config: {},
       adminNotifier: {
         notify: async (notification) => {
           adminNotifications.push(notification);
@@ -215,8 +210,7 @@ describe('processPendingVatRequests', () => {
         checkVatNumber: async () => {
           throw new Error('unexpected parser failure');
         }
-      },
-      config: {}
+      }
     });
 
     expect(result).toEqual({
@@ -241,7 +235,6 @@ describe('processPendingVatRequests', () => {
           throw new Error('unexpected parser failure');
         }
       },
-      config: {},
       adminNotifier: {
         notify: async () => {
           throw new Error('admin channel failed');

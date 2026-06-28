@@ -30,7 +30,7 @@ services:
       POSTGRES_PASSWORD_FILE: ${DATABASE_SUPERUSER_PASSWORD_FILE:-}
       POSTGRES_USER: ${DATABASE_SUPERUSER:-viesvatchecker_superadmin}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -130,7 +130,7 @@ services:
       ADMIN_NTFY_TOKEN: ${ADMIN_NTFY_TOKEN:-}
       ADMIN_NTFY_TOKEN_FILE: ${ADMIN_NTFY_TOKEN_FILE:-}
       PENDING_VAT_WORKER_CRON: ${PENDING_VAT_WORKER_CRON:-0 * * * *}
-    entrypoint: ["/app/cron-entrypoint.sh"]
+    entrypoint: [ "/app/cron-entrypoint.sh" ]
     profiles:
       - scheduler
     restart: unless-stopped

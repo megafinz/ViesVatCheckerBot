@@ -126,7 +126,6 @@ export function createPendingVatWorkerRuntime(
     async run(): Promise<PendingVatJobResult> {
       return await runPendingVatWorker({
         adminNotifier,
-        config: {},
         now: options.now,
         repository: options.repository,
         telegram: options.telegram,
