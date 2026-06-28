@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import {
+  type AdminNotification,
   type PendingVatRequest,
   processPendingVatRequests,
   ViesError
@@ -11,6 +12,23 @@ const pendingVatRequest: PendingVatRequest = {
   vatNumber: '123',
   expirationDate: new Date('2026-07-01T00:00:00.000Z')
 };
+
+type SentAdminNotification = AdminNotification;
+
+function baseJobDeps(
+  repository: PendingVatJobRepository,
+  sentMessages: Array<{ telegramChatId: string; message: string }>
+) {
+  return {
+    repository,
+    telegram: {
+      sendMessage: async (telegramChatId: string, message: string) => {
+        sentMessages.push({ telegramChatId, message });
+      }
+    },
+    now: () => new Date('2026-06-21T00:00:00.000Z')
+  };
+}
 
 class PendingVatJobRepository {
   requests: PendingVatRequest[] = [];
@@ -52,7 +70,7 @@ describe('processPendingVatRequests', () => {
           sentMessages.push({ telegramChatId, message });
         }
       },
-      config: { notifyAdminOnUnrecoverableErrors: false },
+      config: {},
       now: () => new Date('2026-06-21T00:00:00.000Z')
     });
 
@@ -83,7 +101,7 @@ describe('processPendingVatRequests', () => {
           sentMessages.push({ telegramChatId, message });
         }
       },
-      config: { notifyAdminOnUnrecoverableErrors: false },
+      config: {},
       now: () => new Date('2026-07-02T00:00:00.000Z')
     });
 
@@ -109,7 +127,7 @@ describe('processPendingVatRequests', () => {
           sentMessages.push({ telegramChatId, message });
         }
       },
-      config: { notifyAdminOnUnrecoverableErrors: false },
+      config: {},
       now: () => new Date('2026-06-21T00:00:00.000Z')
     });
 
@@ -133,7 +151,7 @@ describe('processPendingVatRequests', () => {
           sentMessages.push({ telegramChatId, message });
         }
       },
-      config: { notifyAdminOnUnrecoverableErrors: false },
+      config: {},
       now: () => new Date('2026-06-21T00:00:00.000Z')
     });
 
@@ -143,26 +161,23 @@ describe('processPendingVatRequests', () => {
     expect(sentMessages).toEqual([]);
   });
 
-  test('demotes a request and notifies user and admin after an unrecoverable error', async () => {
+  test('demotes a request and emits a structured admin notification after an unrecoverable error', async () => {
     repository.requests.push(pendingVatRequest);
+    const adminNotifications: SentAdminNotification[] = [];
 
     const result = await processPendingVatRequests({
-      repository,
+      ...baseJobDeps(repository, sentMessages),
       vies: {
         checkVatNumber: async () => {
           throw new Error('unexpected parser failure');
         }
       },
-      telegram: {
-        sendMessage: async (telegramChatId, message) => {
-          sentMessages.push({ telegramChatId, message });
+      config: {},
+      adminNotifier: {
+        notify: async (notification) => {
+          adminNotifications.push(notification);
         }
-      },
-      config: {
-        notifyAdminOnUnrecoverableErrors: true,
-        adminTelegramChatId: 'admin'
-      },
-      now: () => new Date('2026-06-21T00:00:00.000Z')
+      }
     });
 
     expect(result).toEqual({
@@ -178,12 +193,71 @@ describe('processPendingVatRequests', () => {
         telegramChatId: '123',
         message:
           "🔴 Sorry, something went wrong and we had to stop monitoring the VAT number 'XX123'. We'll investigate what happened and try to resume monitoring. We'll notify you when that happens. Sorry for the inconvenience."
-      },
-      {
-        telegramChatId: 'admin',
-        message:
-          "🔴🔴🔴 [ADMIN] There was an error while processing VAT number 'XX123': unexpected parser failure"
       }
+    ]);
+    expect(adminNotifications).toEqual([
+      {
+        type: 'pending-vat-unrecoverable-error',
+        severity: 'error',
+        vatNumber: 'XX123',
+        errorMessage: 'unexpected parser failure',
+        request: pendingVatRequest
+      }
+    ]);
+  });
+
+  test('does not require an admin notifier for unrecoverable errors', async () => {
+    repository.requests.push(pendingVatRequest);
+
+    const result = await processPendingVatRequests({
+      ...baseJobDeps(repository, sentMessages),
+      vies: {
+        checkVatNumber: async () => {
+          throw new Error('unexpected parser failure');
+        }
+      },
+      config: {}
+    });
+
+    expect(result).toEqual({
+      type: 'processed-with-unrecoverable-errors',
+      processedCount: 1
+    });
+    expect(repository.errors).toEqual([
+      { request: pendingVatRequest, message: 'unexpected parser failure' }
+    ]);
+    expect(sentMessages.map((message) => message.telegramChatId)).toEqual([
+      '123'
+    ]);
+  });
+
+  test('continues processing when the admin notifier fails', async () => {
+    repository.requests.push(pendingVatRequest);
+
+    const result = await processPendingVatRequests({
+      ...baseJobDeps(repository, sentMessages),
+      vies: {
+        checkVatNumber: async () => {
+          throw new Error('unexpected parser failure');
+        }
+      },
+      config: {},
+      adminNotifier: {
+        notify: async () => {
+          throw new Error('admin channel failed');
+        }
+      }
+    });
+
+    expect(result).toEqual({
+      type: 'processed-with-unrecoverable-errors',
+      processedCount: 1
+    });
+    expect(repository.errors).toEqual([
+      { request: pendingVatRequest, message: 'unexpected parser failure' }
+    ]);
+    expect(sentMessages.map((message) => message.telegramChatId)).toEqual([
+      '123'
     ]);
   });
 });

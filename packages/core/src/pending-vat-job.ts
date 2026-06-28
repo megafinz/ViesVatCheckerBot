@@ -20,10 +20,19 @@ export interface TelegramNotifier {
   sendMessage(telegramChatId: string, message: string): Promise<void>;
 }
 
-export interface PendingVatJobConfig {
-  notifyAdminOnUnrecoverableErrors: boolean;
-  adminTelegramChatId?: string;
+export type AdminNotification = {
+  type: 'pending-vat-unrecoverable-error';
+  severity: 'error';
+  vatNumber: string;
+  errorMessage: string;
+  request: PendingVatRequest;
+};
+
+export interface AdminNotifier {
+  notify(notification: AdminNotification): Promise<void>;
 }
+
+export type PendingVatJobConfig = {};
 
 export type PendingVatJobResult =
   | { type: 'processed'; processedCount: number }
@@ -35,6 +44,7 @@ export interface PendingVatJobDependencies {
   vies: ViesClient;
   telegram: TelegramNotifier;
   config: PendingVatJobConfig;
+  adminNotifier?: AdminNotifier;
   now?: () => Date;
 }
 
@@ -119,13 +129,18 @@ async function demoteAndNotify(
     `🔴 Sorry, something went wrong and we had to stop monitoring the VAT number '${vatNumber}'. We'll investigate what happened and try to resume monitoring. We'll notify you when that happens. Sorry for the inconvenience.`
   );
 
-  if (
-    deps.config.notifyAdminOnUnrecoverableErrors &&
-    deps.config.adminTelegramChatId
-  ) {
-    await deps.telegram.sendMessage(
-      deps.config.adminTelegramChatId,
-      `🔴🔴🔴 [ADMIN] There was an error while processing VAT number '${vatNumber}': ${message}`
-    );
+  if (deps.adminNotifier) {
+    try {
+      await deps.adminNotifier.notify({
+        type: 'pending-vat-unrecoverable-error',
+        severity: 'error',
+        vatNumber,
+        errorMessage: message,
+        request: vatRequest
+      });
+    } catch {
+      // Admin notifications are operational diagnostics; they must not break
+      // the user-facing recovery path for a failed VAT request.
+    }
   }
 }
