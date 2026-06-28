@@ -43,6 +43,8 @@ const envCsv = z
       : []
   );
 
+const NodeEnvSchema = z.enum(['development', 'test', 'production']);
+
 const BackendEnvSchema = z.object({
   ADMIN_NOTIFICATION_CHANNELS: envCsv.default([]),
   ADMIN_NTFY_TOKEN: envString.optional(),
@@ -57,9 +59,7 @@ const BackendEnvSchema = z.object({
   HOST: envString.default('0.0.0.0'),
   INTERNAL_API_TOKEN: envString,
   MAX_PENDING_VAT_NUMBERS_PER_USER: envNumber.default(10),
-  NODE_ENV: z
-    .enum(['development', 'test', 'production'])
-    .default('development'),
+  NODE_ENV: NodeEnvSchema.default('development'),
   NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS: envBoolean.default(false),
   PORT: envNumber.default(8080),
   TG_ADMIN_CHAT_ID: envString.optional(),
@@ -85,48 +85,141 @@ const DatabaseEnvSchema = z.object({
   DATABASE_USER: envString
 });
 
-export type AdminNotificationChannel = 'logger' | 'telegram' | 'ntfy';
+const HttpConfigSchema = z.object({
+  host: z.string().min(1),
+  port: z.number().int().positive()
+});
 
-export type BackendConfig = {
-  adminNotifications: {
-    channels: AdminNotificationChannel[];
+const InternalApiConfigSchema = z.object({
+  token: z.string().min(1)
+});
+
+const DatabaseConfigSchema = z.object({
+  host: z.string().min(1),
+  name: z.string().min(1),
+  password: z.string().min(1),
+  port: z.number().int().positive(),
+  user: z.string().min(1)
+});
+
+const TelegramConfigSchema = z.object({
+  botToken: z.string().min(1),
+  pollingEnabled: z.boolean(),
+  pollingIntervalMs: z.number().int().positive()
+});
+
+const VatNumbersConfigSchema = z.object({
+  expirationDays: z.number().int().positive(),
+  maxPendingPerUser: z.number().int().positive()
+});
+
+const ViesConfigSchema = z.object({
+  url: z.string().url()
+});
+
+const AdminTelegramConfigSchema = z.object({
+  chatIds: z.array(z.string().min(1))
+});
+
+const AdminNtfyConfigSchema = z.object({
+  token: z.string().min(1).optional(),
+  topic: z.string().min(1).optional(),
+  url: z.string().url().optional()
+});
+
+const AdminNotificationsConfigSchema = z.object({
+  channels: z.array(AdminNotificationChannelSchema),
+  ntfy: AdminNtfyConfigSchema,
+  telegram: AdminTelegramConfigSchema
+});
+
+const BackendConfigSchema = z.object({
+  adminNotifications: AdminNotificationsConfigSchema,
+  database: DatabaseConfigSchema,
+  http: HttpConfigSchema,
+  internalApi: InternalApiConfigSchema,
+  nodeEnv: NodeEnvSchema,
+  telegram: TelegramConfigSchema,
+  vatNumbers: VatNumbersConfigSchema,
+  vies: ViesConfigSchema
+});
+
+function buildBackendConfig(
+  env: z.infer<typeof BackendEnvSchema>
+): z.infer<typeof BackendConfigSchema> {
+  const explicitChannels: z.infer<typeof AdminNotificationChannelSchema>[] =
+    env.ADMIN_NOTIFICATION_CHANNELS.map((channel) =>
+      AdminNotificationChannelSchema.parse(channel)
+    );
+  const legacyTelegramEnabled =
+    explicitChannels.length === 0 &&
+    env.NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS &&
+    Boolean(env.TG_ADMIN_CHAT_ID);
+  const channels: z.infer<typeof AdminNotificationChannelSchema>[] =
+    legacyTelegramEnabled ? ['telegram'] : explicitChannels;
+  const telegramChatIds = legacyTelegramEnabled
+    ? [env.TG_ADMIN_CHAT_ID as string]
+    : env.ADMIN_TELEGRAM_CHAT_IDS;
+
+  if (channels.includes('telegram') && telegramChatIds.length === 0) {
+    throw new Error('Invalid configuration: ADMIN_TELEGRAM_CHAT_IDS');
+  }
+
+  if (channels.includes('ntfy') && !env.ADMIN_NTFY_URL) {
+    throw new Error('Invalid configuration: ADMIN_NTFY_URL');
+  }
+
+  if (channels.includes('ntfy') && !env.ADMIN_NTFY_TOPIC) {
+    throw new Error('Invalid configuration: ADMIN_NTFY_TOPIC');
+  }
+
+  return BackendConfigSchema.parse({
+    adminNotifications: {
+      channels,
+      ntfy: {
+        token: env.ADMIN_NTFY_TOKEN,
+        topic: env.ADMIN_NTFY_TOPIC,
+        url: env.ADMIN_NTFY_URL
+      },
+      telegram: {
+        chatIds: telegramChatIds
+      }
+    },
+    database: {
+      host: env.DATABASE_HOST,
+      name: env.DATABASE_NAME,
+      password: env.DATABASE_PASSWORD,
+      port: env.DATABASE_PORT,
+      user: env.DATABASE_USER
+    },
+    http: {
+      host: env.HOST,
+      port: env.PORT
+    },
+    internalApi: {
+      token: env.INTERNAL_API_TOKEN
+    },
+    nodeEnv: env.NODE_ENV,
     telegram: {
-      chatIds: string[];
-    };
-    ntfy: {
-      token?: string;
-      topic?: string;
-      url?: string;
-    };
-  };
-  database: {
-    host: string;
-    name: string;
-    password: string;
-    port: number;
-    user: string;
-  };
-  http: {
-    host: string;
-    port: number;
-  };
-  internalApi: {
-    token: string;
-  };
-  nodeEnv: 'development' | 'test' | 'production';
-  telegram: {
-    botToken: string;
-    pollingIntervalMs: number;
-    pollingEnabled: boolean;
-  };
-  vatNumbers: {
-    expirationDays: number;
-    maxPendingPerUser: number;
-  };
-  vies: {
-    url: string;
-  };
-};
+      botToken: env.TG_BOT_TOKEN,
+      pollingEnabled: env.TG_POLLING_ENABLED,
+      pollingIntervalMs: env.TG_POLLING_INTERVAL_MS
+    },
+    vatNumbers: {
+      expirationDays: env.VAT_NUMBER_EXPIRATION_DAYS,
+      maxPendingPerUser: env.MAX_PENDING_VAT_NUMBERS_PER_USER
+    },
+    vies: {
+      url: env.VIES_URL
+    }
+  });
+}
+
+export type AdminNotificationChannel = z.infer<
+  typeof AdminNotificationChannelSchema
+>;
+
+export type BackendConfig = z.infer<typeof BackendConfigSchema>;
 
 export type DatabaseConfig = BackendConfig['database'];
 
@@ -171,42 +264,13 @@ export function parseBackendConfig(env: Env = process.env): BackendConfig {
     TG_BOT_TOKEN: 'TG_BOT_TOKEN_FILE'
   });
 
-  const parsed = BackendEnvSchema.safeParse(preparedEnv);
+  const parsedEnv = BackendEnvSchema.safeParse(preparedEnv);
 
-  if (!parsed.success) {
-    throw new Error(formatConfigError(parsed.error));
+  if (!parsedEnv.success) {
+    throw new Error(formatConfigError(parsedEnv.error));
   }
 
-  return {
-    adminNotifications: parseAdminNotificationConfig(parsed.data),
-    database: {
-      host: parsed.data.DATABASE_HOST,
-      name: parsed.data.DATABASE_NAME,
-      password: parsed.data.DATABASE_PASSWORD,
-      port: parsed.data.DATABASE_PORT,
-      user: parsed.data.DATABASE_USER
-    },
-    http: {
-      host: parsed.data.HOST,
-      port: parsed.data.PORT
-    },
-    internalApi: {
-      token: parsed.data.INTERNAL_API_TOKEN
-    },
-    nodeEnv: parsed.data.NODE_ENV,
-    telegram: {
-      botToken: parsed.data.TG_BOT_TOKEN,
-      pollingIntervalMs: parsed.data.TG_POLLING_INTERVAL_MS,
-      pollingEnabled: parsed.data.TG_POLLING_ENABLED
-    },
-    vatNumbers: {
-      expirationDays: parsed.data.VAT_NUMBER_EXPIRATION_DAYS,
-      maxPendingPerUser: parsed.data.MAX_PENDING_VAT_NUMBERS_PER_USER
-    },
-    vies: {
-      url: parsed.data.VIES_URL
-    }
-  };
+  return buildBackendConfig(parsedEnv.data);
 }
 
 export function parseAdminWebConfig(env: Env = process.env): AdminWebConfig {
@@ -230,49 +294,6 @@ export function parseAdminWebConfig(env: Env = process.env): AdminWebConfig {
     },
     internalApi: {
       token: parsed.data.INTERNAL_API_TOKEN
-    }
-  };
-}
-
-type ParsedBackendEnv = z.infer<typeof BackendEnvSchema>;
-
-function parseAdminNotificationConfig(env: ParsedBackendEnv) {
-  const explicitChannels: AdminNotificationChannel[] =
-    env.ADMIN_NOTIFICATION_CHANNELS.map((channel) =>
-      AdminNotificationChannelSchema.parse(channel)
-    );
-  const legacyTelegramEnabled =
-    explicitChannels.length === 0 &&
-    env.NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS &&
-    Boolean(env.TG_ADMIN_CHAT_ID);
-  const channels: AdminNotificationChannel[] = legacyTelegramEnabled
-    ? ['telegram']
-    : explicitChannels;
-  const telegramChatIds = legacyTelegramEnabled
-    ? [env.TG_ADMIN_CHAT_ID as string]
-    : env.ADMIN_TELEGRAM_CHAT_IDS;
-
-  if (channels.includes('telegram') && telegramChatIds.length === 0) {
-    throw new Error('Invalid configuration: ADMIN_TELEGRAM_CHAT_IDS');
-  }
-
-  if (channels.includes('ntfy') && !env.ADMIN_NTFY_URL) {
-    throw new Error('Invalid configuration: ADMIN_NTFY_URL');
-  }
-
-  if (channels.includes('ntfy') && !env.ADMIN_NTFY_TOPIC) {
-    throw new Error('Invalid configuration: ADMIN_NTFY_TOPIC');
-  }
-
-  return {
-    channels,
-    telegram: {
-      chatIds: telegramChatIds
-    },
-    ntfy: {
-      token: env.ADMIN_NTFY_TOKEN,
-      topic: env.ADMIN_NTFY_TOPIC,
-      url: env.ADMIN_NTFY_URL
     }
   };
 }
