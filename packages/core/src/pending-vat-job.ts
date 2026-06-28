@@ -32,7 +32,8 @@ export interface AdminNotifier {
   notify(notification: AdminNotification): Promise<void>;
 }
 
-export type PendingVatJobConfig = {};
+// biome-ignore lint/suspicious/noExplicitAny: type marker for future config options
+export type PendingVatJobConfig = Record<keyof any, never>;
 
 export type PendingVatJobResult =
   | { type: 'processed'; processedCount: number }
@@ -43,8 +44,8 @@ export interface PendingVatJobDependencies {
   repository: PendingVatRequestRepository;
   vies: ViesClient;
   telegram: TelegramNotifier;
-  config: PendingVatJobConfig;
   adminNotifier?: AdminNotifier;
+  config?: PendingVatJobConfig;
   now?: () => Date;
 }
 

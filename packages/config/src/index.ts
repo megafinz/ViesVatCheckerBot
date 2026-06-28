@@ -237,15 +237,16 @@ export function parseAdminWebConfig(env: Env = process.env): AdminWebConfig {
 type ParsedBackendEnv = z.infer<typeof BackendEnvSchema>;
 
 function parseAdminNotificationConfig(env: ParsedBackendEnv) {
-  const explicitChannels = env.ADMIN_NOTIFICATION_CHANNELS.map((channel) =>
-    AdminNotificationChannelSchema.parse(channel)
-  );
+  const explicitChannels: AdminNotificationChannel[] =
+    env.ADMIN_NOTIFICATION_CHANNELS.map((channel) =>
+      AdminNotificationChannelSchema.parse(channel)
+    );
   const legacyTelegramEnabled =
     explicitChannels.length === 0 &&
     env.NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS &&
     Boolean(env.TG_ADMIN_CHAT_ID);
-  const channels = legacyTelegramEnabled
-    ? (['telegram'] as const)
+  const channels: AdminNotificationChannel[] = legacyTelegramEnabled
+    ? ['telegram']
     : explicitChannels;
   const telegramChatIds = legacyTelegramEnabled
     ? [env.TG_ADMIN_CHAT_ID as string]
