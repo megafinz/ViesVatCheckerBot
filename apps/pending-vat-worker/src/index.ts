@@ -1,5 +1,10 @@
 import {
+  type AdminNotificationLogger,
   buildDatabaseUrl,
+  createFanOutAdminNotifier,
+  createLoggerAdminNotifier,
+  createNtfyAdminNotifier,
+  createTelegramAdminNotifier,
   createTelegramApi,
   createViesHttpClient,
   type TelegramMessenger
@@ -17,8 +22,12 @@ import {
   type Database
 } from '@viesvatchecker/db';
 
+type Fetch = (request: Request) => Promise<Response>;
+
 export interface PendingVatWorkerRuntimeOptions {
-  config: Pick<BackendConfig, 'admin'>;
+  config: Pick<BackendConfig, 'adminNotifications'>;
+  fetch?: Fetch;
+  logger?: AdminNotificationLogger;
   now?: () => Date;
   repository: PendingVatRequestRepository;
   telegram: TelegramMessenger;
@@ -53,17 +62,71 @@ export async function runPendingVatWorker(deps: PendingVatJobDependencies) {
   return await processPendingVatRequests(deps);
 }
 
+function createConfiguredAdminNotifier(options: {
+  config: BackendConfig['adminNotifications'];
+  fetch?: Fetch;
+  logger?: AdminNotificationLogger;
+  telegram: TelegramMessenger;
+}) {
+  const notifiers = options.config.channels.map((channel) => {
+    switch (channel) {
+      case 'logger':
+        return {
+          name: 'logger',
+          notifier: createLoggerAdminNotifier({ logger: options.logger })
+        };
+      case 'telegram':
+        return {
+          name: 'telegram',
+          notifier: createTelegramAdminNotifier({
+            chatIds: options.config.telegram.chatIds,
+            telegram: options.telegram
+          })
+        };
+      case 'ntfy':
+        return {
+          name: 'ntfy',
+          notifier: createNtfyAdminNotifier({
+            fetch: options.fetch,
+            token: options.config.ntfy.token,
+            topic: options.config.ntfy.topic as string,
+            url: options.config.ntfy.url as string
+          })
+        };
+      default: {
+        const _exhaustive: never = channel;
+        throw new Error(
+          `Unknown admin notification channel: ${String(_exhaustive)}`
+        );
+      }
+    }
+  });
+
+  if (notifiers.length === 0) {
+    return undefined;
+  }
+
+  return createFanOutAdminNotifier({
+    logger: options.logger,
+    notifiers
+  });
+}
+
 export function createPendingVatWorkerRuntime(
   options: PendingVatWorkerRuntimeOptions
 ) {
+  const adminNotifier = createConfiguredAdminNotifier({
+    config: options.config.adminNotifications,
+    fetch: options.fetch,
+    logger: options.logger,
+    telegram: options.telegram
+  });
+
   return {
     async run(): Promise<PendingVatJobResult> {
       return await runPendingVatWorker({
-        config: {
-          adminTelegramChatId: options.config.admin.telegramChatId,
-          notifyAdminOnUnrecoverableErrors:
-            options.config.admin.notifyOnUnrecoverableErrors
-        },
+        adminNotifier,
+        config: {},
         now: options.now,
         repository: options.repository,
         telegram: options.telegram,

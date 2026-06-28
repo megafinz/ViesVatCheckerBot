@@ -17,10 +17,6 @@ test('runPendingVatWorker processes pending requests with worker dependencies', 
   const sentMessages: Array<{ chatId: string; text: string }> = [];
 
   const result = await runPendingVatWorker({
-    config: {
-      adminTelegramChatId: undefined,
-      notifyAdminOnUnrecoverableErrors: false
-    },
     now: () => new Date('2026-06-21T00:00:00.000Z'),
     repository: {
       getAllVatRequests: async () => [request],
@@ -50,15 +46,82 @@ test('runPendingVatWorker processes pending requests with worker dependencies', 
   ]);
 });
 
-test('createPendingVatWorkerRuntime maps config into pending job config', async () => {
-  const sentMessages: Array<{ chatId: string; text: string }> = [];
+test('createPendingVatWorkerRuntime builds a logger admin notifier when configured', async () => {
+  const adminLogs: unknown[][] = [];
 
   const runtime = createPendingVatWorkerRuntime({
     config: {
-      admin: {
-        notifyOnUnrecoverableErrors: true,
-        telegramChatId: 'admin'
+      adminNotifications: {
+        channels: ['logger'],
+        telegram: {
+          chatIds: []
+        },
+        ntfy: {
+          token: undefined,
+          topic: undefined,
+          url: undefined
+        }
       }
+    },
+    logger: {
+      error: (...args: unknown[]) => adminLogs.push(args)
+    },
+    repository: {
+      getAllVatRequests: async () => [
+        {
+          telegramChatId: '123',
+          countryCode: 'PL',
+          vatNumber: '1234567890',
+          expirationDate: new Date('2026-07-01T00:00:00.000Z')
+        }
+      ],
+      removeVatRequest: async () => false,
+      demoteVatRequestToError: async () => null
+    },
+    telegram: {
+      sendMessage: async () => {}
+    },
+    vies: {
+      checkVatNumber: async () => {
+        throw new Error('boom');
+      }
+    }
+  });
+
+  const result = await runtime.run();
+
+  expect(result).toEqual({
+    type: 'processed-with-unrecoverable-errors',
+    processedCount: 1
+  });
+  expect(adminLogs[0]).toEqual([
+    '[admin-notification]',
+    'VIES VAT checker error',
+    "There was an error while processing VAT number 'PL1234567890': boom"
+  ]);
+});
+
+test('createPendingVatWorkerRuntime builds telegram and ntfy admin notifiers when configured', async () => {
+  const sentMessages: Array<{ chatId: string; text: string }> = [];
+  const ntfyRequests: Request[] = [];
+
+  const runtime = createPendingVatWorkerRuntime({
+    config: {
+      adminNotifications: {
+        channels: ['telegram', 'ntfy'],
+        telegram: {
+          chatIds: ['admin-1', 'admin-2']
+        },
+        ntfy: {
+          token: 'ntfy-token',
+          topic: 'vies-alerts',
+          url: 'https://ntfy.example.com'
+        }
+      }
+    },
+    fetch: async (request) => {
+      ntfyRequests.push(request);
+      return new Response('', { status: 200 });
     },
     repository: {
       getAllVatRequests: async () => [
@@ -84,16 +147,15 @@ test('createPendingVatWorkerRuntime maps config into pending job config', async 
     }
   });
 
-  const result = await runtime.run();
+  await runtime.run();
 
-  expect(result).toEqual({
-    type: 'processed-with-unrecoverable-errors',
-    processedCount: 1
-  });
   expect(sentMessages.map((message) => message.chatId)).toEqual([
     '123',
-    'admin'
+    'admin-1',
+    'admin-2'
   ]);
+  expect(ntfyRequests).toHaveLength(1);
+  expect(ntfyRequests[0].url).toBe('https://ntfy.example.com/vies-alerts');
 });
 
 test('startPendingVatWorker runs without database migrations', async () => {
@@ -101,6 +163,7 @@ test('startPendingVatWorker runs without database migrations', async () => {
 
   const result = await startPendingVatWorker(
     {
+      ADMIN_NOTIFICATION_CHANNELS: 'logger',
       DATABASE_HOST: 'db',
       DATABASE_NAME: 'viesvatchecker',
       DATABASE_PASSWORD: 'runtime-secret',

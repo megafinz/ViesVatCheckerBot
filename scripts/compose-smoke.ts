@@ -10,6 +10,7 @@ export function buildComposeSmokeEnvironment(
 ): NodeJS.ProcessEnv {
   return {
     ...process.env,
+    ADMIN_NOTIFICATION_CHANNELS: '',
     ADMIN_WEB_PUBLISHED_PORT: '0',
     COMPOSE_PROJECT_NAME: projectName,
     DATABASE_MIGRATOR_PASSWORD: `migrator-${randomUUID()}`,
@@ -19,7 +20,6 @@ export function buildComposeSmokeEnvironment(
     DATABASE_SUPERUSER_PASSWORD: `superuser-${randomUUID()}`,
     HTTP_PUBLISHED_PORT: '0',
     INTERNAL_API_TOKEN: `internal-${randomUUID()}`,
-    TG_ADMIN_CHAT_ID: '0',
     TG_BOT_TOKEN: 'compose-smoke-token',
     TG_POLLING_ENABLED: 'false'
   };

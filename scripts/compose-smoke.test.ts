@@ -12,7 +12,7 @@ test('compose smoke environment uses isolated ports, project, and required secre
   expect(env.HTTP_PUBLISHED_PORT).toBe('0');
   expect(env.ADMIN_WEB_PUBLISHED_PORT).toBe('0');
   expect(env.TG_POLLING_ENABLED).toBe('false');
-  expect(env.TG_ADMIN_CHAT_ID).toBeTruthy();
+  expect(env.ADMIN_NOTIFICATION_CHANNELS).toBe('');
   expect(env.INTERNAL_API_TOKEN).toBeTruthy();
   expect(env.DATABASE_SUPERUSER_PASSWORD).toBeTruthy();
   expect(env.DATABASE_MIGRATOR_PASSWORD).toBeTruthy();
