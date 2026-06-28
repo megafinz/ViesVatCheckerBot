@@ -62,13 +62,49 @@ Useful options:
 | `TG_POLLING_ENABLED` | `true` | Enables Telegram long polling in the backend. |
 | `TG_POLLING_INTERVAL_MS` | `1000` | Delay between polling cycles. |
 | `PENDING_VAT_WORKER_CRON` | `0 * * * *` | Cron schedule for pending VAT checks. |
-| `TG_ADMIN_CHAT_ID` | empty | Optional Telegram chat for admin notifications. |
-| `NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS` | `false` | Sends admin notifications for unrecoverable worker errors when enabled. |
+| `ADMIN_NOTIFICATION_CHANNELS` | empty | Comma-separated admin notification channels: `logger`, `telegram`, `ntfy`. Empty disables admin notifications. |
+| `ADMIN_TELEGRAM_CHAT_IDS` | empty | Comma-separated Telegram chat IDs for admin notifications. Required when `telegram` is in `ADMIN_NOTIFICATION_CHANNELS`. |
+| `ADMIN_NTFY_URL` | empty | Base URL of the ntfy server for admin notifications. Required when `ntfy` is in `ADMIN_NOTIFICATION_CHANNELS`. |
+| `ADMIN_NTFY_TOPIC` | empty | ntfy topic for admin notifications. Required when `ntfy` is in `ADMIN_NOTIFICATION_CHANNELS`. |
+| `ADMIN_NTFY_TOKEN` | empty | ntfy auth token. Prefer `ADMIN_NTFY_TOKEN_FILE` for container secret stores. |
+| `ADMIN_NTFY_TOKEN_FILE` | empty | File path containing the ntfy auth token. |
 | `MAX_PENDING_VAT_NUMBERS_PER_USER` | `10` | Per-user pending VAT limit. |
 | `VAT_NUMBER_EXPIRATION_DAYS` | `90` | Days before a pending VAT number expires. |
 | `VIES_URL` | EU VIES WSDL URL | VAT validation endpoint. |
 
 Keep real secrets, hostnames, and deployment-specific overrides in `.env` or a private deployment repo. Do not commit them to this public repository.
+
+## Admin Notifications
+
+Admin notifications are disabled by default. Enable one or more channels with `ADMIN_NOTIFICATION_CHANNELS`, using a comma-separated list. Channels are useful for surfacing unrecoverable worker errors to operators.
+
+`logger` writes admin alerts to the worker logs and is useful for local development:
+
+```env
+ADMIN_NOTIFICATION_CHANNELS=logger
+```
+
+`Telegram` sends admin alerts through the bot to one or more chat IDs:
+
+```env
+ADMIN_NOTIFICATION_CHANNELS=telegram
+ADMIN_TELEGRAM_CHAT_IDS=123456789,987654321
+```
+
+`ntfy` sends alerts to an ntfy topic:
+
+```env
+ADMIN_NOTIFICATION_CHANNELS=ntfy
+ADMIN_NTFY_URL=https://ntfy.example.com
+ADMIN_NTFY_TOPIC=vies-alerts
+ADMIN_NTFY_TOKEN_FILE=/run/secrets/ntfy_token
+```
+
+Channels can be combined:
+
+```env
+ADMIN_NOTIFICATION_CHANNELS=logger,telegram,ntfy
+```
 
 ## Start The Service
 
