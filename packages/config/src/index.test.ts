@@ -27,9 +27,9 @@ test('parses required backend environment', () => {
     INTERNAL_API_TOKEN: 'internal-token',
     MAX_PENDING_VAT_NUMBERS_PER_USER: '12',
     NODE_ENV: 'production',
-    NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS: 'true',
+    ADMIN_NOTIFICATION_CHANNELS: 'telegram',
+    ADMIN_TELEGRAM_CHAT_IDS: '123,456',
     PORT: '8081',
-    TG_ADMIN_CHAT_ID: '123',
     TG_BOT_TOKEN: 'telegram-token',
     TG_POLLING_INTERVAL_MS: '1500',
     VAT_NUMBER_EXPIRATION_DAYS: '30',
@@ -37,9 +37,16 @@ test('parses required backend environment', () => {
   });
 
   expect(config).toEqual({
-    admin: {
-      notifyOnUnrecoverableErrors: true,
-      telegramChatId: '123'
+    adminNotifications: {
+      channels: ['telegram'],
+      telegram: {
+        chatIds: ['123', '456']
+      },
+      ntfy: {
+        token: undefined,
+        topic: undefined,
+        url: undefined
+      }
     },
     database: {
       host: 'db',
@@ -90,9 +97,16 @@ test('uses defaults for optional backend environment', () => {
     expirationDays: 90,
     maxPendingPerUser: 10
   });
-  expect(config.admin).toEqual({
-    notifyOnUnrecoverableErrors: false,
-    telegramChatId: undefined
+  expect(config.adminNotifications).toEqual({
+    channels: [],
+    telegram: {
+      chatIds: []
+    },
+    ntfy: {
+      token: undefined,
+      topic: undefined,
+      url: undefined
+    }
   });
   expect(config.database.port).toBe(5432);
 });
@@ -222,4 +236,121 @@ test('reports missing required backend environment by variable name', () => {
   expect(() => parseBackendConfig({})).toThrow('INTERNAL_API_TOKEN');
   expect(() => parseBackendConfig({})).toThrow('TG_BOT_TOKEN');
   expect(() => parseBackendConfig({})).toThrow('VIES_URL');
+});
+
+test('parses logger admin notification channel without channel-specific settings', () => {
+  const config = parseBackendConfig({
+    DATABASE_HOST: 'db',
+    DATABASE_NAME: 'viesvatchecker',
+    DATABASE_PASSWORD: 'postgres-password',
+    DATABASE_USER: 'backend',
+    INTERNAL_API_TOKEN: 'internal-token',
+    TG_BOT_TOKEN: 'telegram-token',
+    VIES_URL: 'https://example.com/vies.wsdl',
+    ADMIN_NOTIFICATION_CHANNELS: 'logger'
+  });
+
+  expect(config.adminNotifications.channels).toEqual(['logger']);
+});
+
+test('parses ntfy admin notification channel and token file fallback', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'vies-config-'));
+  tempDirs.push(dir);
+  const ntfyTokenFile = join(dir, 'ntfy-token');
+  writeFileSync(ntfyTokenFile, 'ntfy-secret\n');
+
+  const config = parseBackendConfig({
+    DATABASE_HOST: 'db',
+    DATABASE_NAME: 'viesvatchecker',
+    DATABASE_PASSWORD: 'postgres-password',
+    DATABASE_USER: 'backend',
+    INTERNAL_API_TOKEN: 'internal-token',
+    TG_BOT_TOKEN: 'telegram-token',
+    VIES_URL: 'https://example.com/vies.wsdl',
+    ADMIN_NOTIFICATION_CHANNELS: 'ntfy',
+    ADMIN_NTFY_URL: 'https://ntfy.example.com',
+    ADMIN_NTFY_TOPIC: 'vies-alerts',
+    ADMIN_NTFY_TOKEN_FILE: ntfyTokenFile
+  });
+
+  expect(config.adminNotifications).toEqual({
+    channels: ['ntfy'],
+    telegram: {
+      chatIds: []
+    },
+    ntfy: {
+      token: 'ntfy-secret',
+      topic: 'vies-alerts',
+      url: 'https://ntfy.example.com'
+    }
+  });
+});
+
+test('rejects telegram admin notification channel without chat ids', () => {
+  expect(() =>
+    parseBackendConfig({
+      DATABASE_HOST: 'db',
+      DATABASE_NAME: 'viesvatchecker',
+      DATABASE_PASSWORD: 'postgres-password',
+      DATABASE_USER: 'backend',
+      INTERNAL_API_TOKEN: 'internal-token',
+      TG_BOT_TOKEN: 'telegram-token',
+      VIES_URL: 'https://example.com/vies.wsdl',
+      ADMIN_NOTIFICATION_CHANNELS: 'telegram'
+    })
+  ).toThrow('ADMIN_TELEGRAM_CHAT_IDS');
+});
+
+test('rejects ntfy admin notification channel without url or topic', () => {
+  expect(() =>
+    parseBackendConfig({
+      DATABASE_HOST: 'db',
+      DATABASE_NAME: 'viesvatchecker',
+      DATABASE_PASSWORD: 'postgres-password',
+      DATABASE_USER: 'backend',
+      INTERNAL_API_TOKEN: 'internal-token',
+      TG_BOT_TOKEN: 'telegram-token',
+      VIES_URL: 'https://example.com/vies.wsdl',
+      ADMIN_NOTIFICATION_CHANNELS: 'ntfy'
+    })
+  ).toThrow('ADMIN_NTFY_URL');
+  expect(() =>
+    parseBackendConfig({
+      DATABASE_HOST: 'db',
+      DATABASE_NAME: 'viesvatchecker',
+      DATABASE_PASSWORD: 'postgres-password',
+      DATABASE_USER: 'backend',
+      INTERNAL_API_TOKEN: 'internal-token',
+      TG_BOT_TOKEN: 'telegram-token',
+      VIES_URL: 'https://example.com/vies.wsdl',
+      ADMIN_NOTIFICATION_CHANNELS: 'ntfy',
+      ADMIN_NTFY_URL: 'https://ntfy.example.com'
+    })
+  ).toThrow('ADMIN_NTFY_TOPIC');
+});
+
+test('maps legacy admin notification env to telegram channel', () => {
+  const config = parseBackendConfig({
+    DATABASE_HOST: 'db',
+    DATABASE_NAME: 'viesvatchecker',
+    DATABASE_PASSWORD: 'postgres-password',
+    DATABASE_USER: 'backend',
+    INTERNAL_API_TOKEN: 'internal-token',
+    TG_BOT_TOKEN: 'telegram-token',
+    VIES_URL: 'https://example.com/vies.wsdl',
+    NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS: 'true',
+    TG_ADMIN_CHAT_ID: '123'
+  });
+
+  expect(config.adminNotifications).toEqual({
+    channels: ['telegram'],
+    telegram: {
+      chatIds: ['123']
+    },
+    ntfy: {
+      token: undefined,
+      topic: undefined,
+      url: undefined
+    }
+  });
 });
