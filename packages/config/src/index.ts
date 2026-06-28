@@ -144,6 +144,16 @@ const BackendConfigSchema = z.object({
   vies: ViesConfigSchema
 });
 
+const AdminWebBackendConfigSchema = z.object({
+  url: z.string().url()
+});
+
+const AdminWebConfigSchema = z.object({
+  backend: AdminWebBackendConfigSchema,
+  http: HttpConfigSchema,
+  internalApi: InternalApiConfigSchema
+});
+
 function buildBackendConfig(
   env: z.infer<typeof BackendEnvSchema>
 ): z.infer<typeof BackendConfigSchema> {
@@ -223,18 +233,7 @@ export type BackendConfig = z.infer<typeof BackendConfigSchema>;
 
 export type DatabaseConfig = BackendConfig['database'];
 
-export type AdminWebConfig = {
-  backend: {
-    url: string;
-  };
-  http: {
-    host: string;
-    port: number;
-  };
-  internalApi: {
-    token: string;
-  };
-};
+export type AdminWebConfig = z.infer<typeof AdminWebConfigSchema>;
 
 export function parseDatabaseConfig(env: Env = process.env): DatabaseConfig {
   const preparedEnv = resolveSecretFiles(env, {
@@ -284,7 +283,7 @@ export function parseAdminWebConfig(env: Env = process.env): AdminWebConfig {
     throw new Error(formatConfigError(parsed.error));
   }
 
-  return {
+  return AdminWebConfigSchema.parse({
     backend: {
       url: parsed.data.ADMIN_BACKEND_URL
     },
@@ -295,7 +294,7 @@ export function parseAdminWebConfig(env: Env = process.env): AdminWebConfig {
     internalApi: {
       token: parsed.data.INTERNAL_API_TOKEN
     }
-  };
+  });
 }
 
 function resolveSecretFiles(
