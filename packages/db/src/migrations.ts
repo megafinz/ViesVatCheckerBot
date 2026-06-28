@@ -2,6 +2,20 @@ import { sql } from 'drizzle-orm';
 import { migrate as drizzleMigrate } from 'drizzle-orm/postgres-js/migrator';
 import type { Database } from './client';
 
+// This module exposes two parallel migration paths on purpose:
+// - `migrateDatabase` runs the raw CREATE TABLE / CREATE INDEX statements
+//   below. It is used by the Postgres repository integration tests in
+//   `repositories.test.ts` because it needs a known schema without depending
+//   on the generated migration folder being present at test time.
+// - `migrateGeneratedDatabase` runs the SQL files emitted by drizzle-kit under
+//   `packages/db/drizzle`. It is the path used by the production `db-migrator`
+//   service.
+//
+// When you change `packages/db/src/schema.ts`, regenerate the SQL files with
+// `bun run db:generate`, commit them, and let `db-migrator` apply them. Do not
+// edit the `migrateDatabase` block below without also updating the generated
+// migrations, otherwise tests and production will drift apart.
+
 export interface GeneratedMigrationConfig {
   migrationsFolder: string;
 }

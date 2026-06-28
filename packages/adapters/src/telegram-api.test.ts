@@ -52,6 +52,25 @@ test('Telegram API sendMessage posts chat id and message text', async () => {
   });
 });
 
+test('Telegram API deleteWebhook clears any registered webhook', async () => {
+  const requests: Request[] = [];
+  const api = createTelegramApi({
+    botToken: 'telegram-token',
+    fetch: async (request) => {
+      requests.push(request);
+      return Response.json({ ok: true, result: true });
+    }
+  });
+
+  await api.deleteWebhook();
+
+  expect(requests).toHaveLength(1);
+  expect(requests[0].url).toBe(
+    'https://api.telegram.org/bottelegram-token/deleteWebhook'
+  );
+  expect(await requests[0].json()).toEqual({});
+});
+
 test('Telegram API throws when Telegram returns ok false', async () => {
   const api = createTelegramApi({
     botToken: 'telegram-token',

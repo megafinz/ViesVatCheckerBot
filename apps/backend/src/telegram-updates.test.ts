@@ -175,4 +175,50 @@ describe('handleTelegramUpdate', () => {
 
     expect(sentMessages).toEqual([]);
   });
+
+  test('rejects /check when the VAT number is missing the country code', async () => {
+    const { deps, repository, sentMessages } = createDeps();
+
+    await handleTelegramUpdate(
+      {
+        update_id: 14,
+        message: {
+          chat: { id: 123 },
+          text: '/check 1234567890'
+        }
+      },
+      deps
+    );
+
+    expect(repository.requests).toEqual([]);
+    expect(sentMessages).toEqual([
+      {
+        chatId: '123',
+        text: "🔴 VAT number '1234567890' must start with a two-letter country code."
+      }
+    ]);
+  });
+
+  test('rejects /check when the VAT number contains illegal characters', async () => {
+    const { deps, repository, sentMessages } = createDeps();
+
+    await handleTelegramUpdate(
+      {
+        update_id: 15,
+        message: {
+          chat: { id: 123 },
+          text: '/check PL12-34'
+        }
+      },
+      deps
+    );
+
+    expect(repository.requests).toEqual([]);
+    expect(sentMessages).toEqual([
+      {
+        chatId: '123',
+        text: "🔴 VAT number 'PL12-34' contains invalid characters."
+      }
+    ]);
+  });
 });

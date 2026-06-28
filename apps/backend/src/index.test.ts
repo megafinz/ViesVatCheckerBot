@@ -37,6 +37,7 @@ test('createBackendRuntime creates the health app and leaves polling stopped whe
       updateVatRequest: async () => false
     },
     telegram: {
+      deleteWebhook: async () => {},
       getUpdates: async () => [],
       sendMessage: async () => {}
     },
@@ -88,6 +89,7 @@ test('createBackendRuntime exposes authenticated internal admin routes', async (
       updateVatRequest: async () => false
     },
     telegram: {
+      deleteWebhook: async () => {},
       getUpdates: async () => [],
       sendMessage: async () => {}
     },
@@ -103,6 +105,105 @@ test('createBackendRuntime exposes authenticated internal admin routes', async (
   );
 
   expect(response.status).toBe(200);
+});
+
+test('createBackendRuntime calls deleteWebhook before polling starts', async () => {
+  let deleteWebhookCalls = 0;
+  let getUpdatesCalls = 0;
+
+  const runtime = createBackendRuntime({
+    config: {
+      expirationDays: 90,
+      internalApiToken: 'internal-token',
+      maxPendingPerUser: 10,
+      pollingEnabled: true,
+      pollingIntervalMs: 5
+    },
+    repository: {
+      tryAddUniqueVatRequest: async (request) => ({
+        ...request,
+        expirationDate: new Date('2026-09-19T00:00:00.000Z')
+      }),
+      removeVatRequest: async () => false,
+      countVatRequests: async () => 0,
+      getAllVatRequests: async () => [],
+      removeAllVatRequests: async () => true,
+      getAllVatRequestErrors: async () => [],
+      removeVatRequestError: async () => false,
+      resolveVatRequestError: async () => ({ type: 'error-not-found' }),
+      updateVatRequest: async () => false
+    },
+    telegram: {
+      deleteWebhook: async () => {
+        deleteWebhookCalls += 1;
+      },
+      getUpdates: async () => {
+        getUpdatesCalls += 1;
+        return [];
+      },
+      sendMessage: async () => {}
+    },
+    vies: {
+      checkVatNumber: async () => ({ valid: false })
+    }
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  await runtime.stop();
+
+  expect(deleteWebhookCalls).toBeGreaterThan(0);
+  expect(getUpdatesCalls).toBeGreaterThan(0);
+});
+
+test('createBackendRuntime backs off when Telegram polling keeps failing', async () => {
+  const start = Date.now();
+  let calls = 0;
+
+  const runtime = createBackendRuntime({
+    config: {
+      expirationDays: 90,
+      internalApiToken: 'internal-token',
+      maxPendingPerUser: 10,
+      pollingEnabled: true,
+      pollingIntervalMs: 5
+    },
+    repository: {
+      tryAddUniqueVatRequest: async (request) => ({
+        ...request,
+        expirationDate: new Date('2026-09-19T00:00:00.000Z')
+      }),
+      removeVatRequest: async () => false,
+      countVatRequests: async () => 0,
+      getAllVatRequests: async () => [],
+      removeAllVatRequests: async () => true,
+      getAllVatRequestErrors: async () => [],
+      removeVatRequestError: async () => false,
+      resolveVatRequestError: async () => ({ type: 'error-not-found' }),
+      updateVatRequest: async () => false
+    },
+    telegram: {
+      deleteWebhook: async () => {},
+      getUpdates: async () => {
+        calls += 1;
+        throw new Error('Telegram is down');
+      },
+      sendMessage: async () => {}
+    },
+    vies: {
+      checkVatNumber: async () => ({ valid: false })
+    }
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  await runtime.stop();
+  const elapsed = Date.now() - start;
+
+  // After the first failure the next attempt is delayed (5ms interval * 2 = 10ms),
+  // then 20ms, then 40ms. With ~80ms of wall-clock time we expect at most a handful
+  // of attempts rather than the ~16 that immediate retries would produce.
+  expect(calls).toBeGreaterThan(0);
+  expect(calls).toBeLessThan(8);
+  expect(elapsed).toBeGreaterThan(0);
 });
 
 test('startBackend starts without running database migrations', async () => {
@@ -148,6 +249,7 @@ test('startBackend starts without running database migrations', async () => {
         updateVatRequest: async () => false
       }),
       createTelegram: () => ({
+        deleteWebhook: async () => {},
         getUpdates: async () => [],
         sendMessage: async () => {}
       }),

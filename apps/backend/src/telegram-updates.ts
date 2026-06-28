@@ -1,6 +1,8 @@
 import {
   checkVatRequest,
+  InvalidVatNumberFormatError,
   listVatRequests,
+  parseVatNumber,
   uncheckAllVatRequests,
   uncheckVatRequest,
   type VatCommandConfig,
@@ -62,14 +64,16 @@ async function handleCommand(
       return 'Please provide a single VAT number prefixed by country code: /check VAT_NUMBER (example: /check PL1234567890).';
     }
 
-    const response = await checkVatRequest(
-      parseVatRequest(telegramChatId, args[0]),
-      {
-        config: deps.config,
-        repository: deps.repository,
-        vies: deps.vies
-      }
-    );
+    const vatRequest = safeParseVatRequest(telegramChatId, args[0]);
+    if (typeof vatRequest === 'string') {
+      return vatRequest;
+    }
+
+    const response = await checkVatRequest(vatRequest, {
+      config: deps.config,
+      repository: deps.repository,
+      vies: deps.vies
+    });
     return response.body.message;
   }
 
@@ -78,10 +82,14 @@ async function handleCommand(
       return 'Please provide a single VAT number prefixed by country code: /uncheck VAT_NUMBER(example: /uncheck PL1234567890).';
     }
 
-    const response = await uncheckVatRequest(
-      parseVatRequest(telegramChatId, args[0]),
-      { repository: deps.repository }
-    );
+    const vatRequest = safeParseVatRequest(telegramChatId, args[0]);
+    if (typeof vatRequest === 'string') {
+      return vatRequest;
+    }
+
+    const response = await uncheckVatRequest(vatRequest, {
+      repository: deps.repository
+    });
     return response.body.message;
   }
 
@@ -102,13 +110,17 @@ async function handleCommand(
   return null;
 }
 
-function parseVatRequest(
+function safeParseVatRequest(
   telegramChatId: string,
   vatNumber: string
-): VatRequest {
-  return {
-    telegramChatId,
-    countryCode: vatNumber.slice(0, 2).toUpperCase(),
-    vatNumber: vatNumber.slice(2)
-  };
+): VatRequest | string {
+  try {
+    const parsed = parseVatNumber(vatNumber);
+    return { telegramChatId, ...parsed };
+  } catch (error) {
+    if (error instanceof InvalidVatNumberFormatError) {
+      return `🔴 ${error.message}`;
+    }
+    throw error;
+  }
 }

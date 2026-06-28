@@ -282,6 +282,33 @@ test('updates a pending VAT request number', async () => {
   ]);
 });
 
+test('rejects a VAT request update with a malformed VAT number', async () => {
+  const repository = createRepository();
+  await repository.resolveVatRequestError('error-1');
+  const app = createAdminRoutes({
+    internalApiToken: 'secret',
+    repository,
+    telegram: { sendMessage: async () => {} }
+  });
+
+  const response = await app.handle(
+    adminRequest('http://localhost/internal/admin/vat-requests', {
+      body: JSON.stringify({
+        telegramChatId: '123',
+        vatNumber: 'AA12345678',
+        newVatNumber: 'BB12-34'
+      }),
+      method: 'PATCH'
+    })
+  );
+
+  expect(response.status).toBe(400);
+  expect(await response.text()).toBe(
+    "VAT number 'BB12-34' contains invalid characters."
+  );
+  expect(await repository.getAllVatRequests()).toEqual([pendingVatRequest]);
+});
+
 function adminRequest(url: string, init: RequestInit = {}) {
   return new Request(url, {
     ...init,

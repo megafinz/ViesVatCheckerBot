@@ -1,5 +1,6 @@
 import {
   formatVatNumber,
+  InvalidVatNumberFormatError,
   type PendingVatRequest,
   parseVatNumber,
   type VatRequest,
@@ -38,11 +39,15 @@ type UpdateVatRequestBody = {
 };
 
 export function createAdminRoutes(options: AdminRoutesOptions) {
+  const expectedAuthorization = `Bearer ${options.internalApiToken}`;
+
   return new Elysia()
     .onBeforeHandle(({ request }) => {
       if (
-        request.headers.get('authorization') !==
-        `Bearer ${options.internalApiToken}`
+        !timingSafeStringEquals(
+          request.headers.get('authorization'),
+          expectedAuthorization
+        )
       ) {
         return new Response('Unauthorized', { status: 401 });
       }
@@ -71,8 +76,18 @@ export function createAdminRoutes(options: AdminRoutesOptions) {
         return new Response(null, { status: 204 });
       }
 
-      const vatRequest = parseVatNumber(vatNumber);
-      const newVatRequest = parseVatNumber(newVatNumber);
+      let vatRequest: ReturnType<typeof parseVatNumber>;
+      let newVatRequest: ReturnType<typeof parseVatNumber>;
+      try {
+        vatRequest = parseVatNumber(vatNumber);
+        newVatRequest = parseVatNumber(newVatNumber);
+      } catch (error) {
+        if (error instanceof InvalidVatNumberFormatError) {
+          return new Response(error.message, { status: 400 });
+        }
+        throw error;
+      }
+
       const updated = await options.repository.updateVatRequest(
         {
           telegramChatId,
@@ -173,4 +188,24 @@ async function resolveError(input: {
 
 function isTruthy(value: unknown) {
   return value === true || value === 'true' || value === '1';
+}
+
+function timingSafeStringEquals(a: string | null, b: string) {
+  if (a === null) {
+    return false;
+  }
+
+  // Length difference leaks via the early return, but the token length is
+  // not secret and the header is constant per request, so this is fine for an
+  // internal-only bearer token check.
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+
+  return mismatch === 0;
 }

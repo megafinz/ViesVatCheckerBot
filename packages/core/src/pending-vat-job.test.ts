@@ -3,6 +3,7 @@ import {
   type AdminNotification,
   type PendingVatRequest,
   processPendingVatRequests,
+  type VatRequestError,
   ViesError
 } from './index';
 
@@ -14,6 +15,7 @@ const pendingVatRequest: PendingVatRequest = {
 };
 
 type SentAdminNotification = AdminNotification;
+type StoredVatRequestError = VatRequestError;
 
 function baseJobDeps(
   repository: PendingVatJobRepository,
@@ -43,7 +45,10 @@ class PendingVatJobRepository {
     return true;
   }
 
-  async demoteVatRequestToError(request: PendingVatRequest, message: string) {
+  async demoteVatRequestToError(
+    request: PendingVatRequest,
+    message: string
+  ): Promise<StoredVatRequestError | null> {
     this.errors.push({ request, message });
     await this.removeVatRequest(request);
     return { id: 'error-1', vatRequest: request, error: message };
@@ -109,7 +114,7 @@ describe('processPendingVatRequests', () => {
       {
         telegramChatId: '123',
         message:
-          "🔴 You VAT number 'XX123' is no longer monitored because it's still invalid and it's been too long since you registered it. Make sure you entered the right VAT number or that the entity that this VAT number belongs to actually applied for registration in VIES."
+          "🔴 Your VAT number 'XX123' is no longer monitored because it's still invalid and it's been too long since you registered it. Make sure you entered the right VAT number or that the entity that this VAT number belongs to actually applied for registration in VIES."
       }
     ]);
   });
@@ -252,5 +257,36 @@ describe('processPendingVatRequests', () => {
     expect(sentMessages.map((message) => message.telegramChatId)).toEqual([
       '123'
     ]);
+  });
+
+  test('skips the user and admin notification when the request was already demoted', async () => {
+    repository.requests.push(pendingVatRequest);
+    const adminNotifications: SentAdminNotification[] = [];
+    const originalDemote = repository.demoteVatRequestToError.bind(repository);
+    repository.demoteVatRequestToError = async (request, message) => {
+      await originalDemote(request, message);
+      return null;
+    };
+
+    const result = await processPendingVatRequests({
+      ...baseJobDeps(repository, sentMessages),
+      vies: {
+        checkVatNumber: async () => {
+          throw new Error('unexpected parser failure');
+        }
+      },
+      adminNotifier: {
+        notify: async (notification) => {
+          adminNotifications.push(notification);
+        }
+      }
+    });
+
+    expect(result).toEqual({
+      type: 'processed-with-unrecoverable-errors',
+      processedCount: 1
+    });
+    expect(sentMessages).toEqual([]);
+    expect(adminNotifications).toEqual([]);
   });
 });

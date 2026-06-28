@@ -10,88 +10,88 @@ You can do the same manually here: https://ec.europa.eu/taxation_customs/vies
 
 # How Does It Do That?
 
-Code is [TypeScript](https://www.typescriptlang.org)/[Node.js](https://nodejs.dev) that is intended to be deployed on [Azure Functions](https://azure.microsoft.com/en-us/services/functions/). Database is [CosmosDB](https://azure.microsoft.com/en-us/services/cosmos-db/) which is also deployed on Azure (and is accessed through MongoDB APIs). [Telegraf](https://github.com/telegraf/telegraf) is a framework of choice for handling Telegram bot interactions.
+Code is [TypeScript](https://www.typescriptlang.org) running on the [Bun](https://bun.sh) runtime. Persistence is [PostgreSQL](https://www.postgresql.org/) accessed through [Drizzle ORM](https://orm.drizzle.team). The HTTP API is built on [Elysia](https://elysiajs.com), and the Telegram bot client talks directly to the Bot API over HTTPS long polling.
 
-## Why Do I Use What I Use?
+# Why Do I Use What I Use?
 
-- **Serverless**: I didn't want to pay for the hosting (serverless is basically free for small workloads) and also wanted to try, well, serverless.
-- **Azure**: because I already have an account and have a bit of familiarity with the ecosystem.
-- **Typescript/Node.js**: quick feedback loop for hacking/exploring solutions, can be deployed on **Azure**.
-- **CosmosDB / MongoDB**: provided by **Azure**, low effort deployment and usage in the context of **Node.js** (especially for such a simple use case).
+- **Bun**: fast TypeScript-first runtime with a built-in test runner, package manager, and bundler; keeps the stack to a single binary.
+- **PostgreSQL**: durable, ubiquitous, free; gives me real transactions and a role-permission model I can lean on.
+- **Drizzle**: type-safe SQL builder that pairs well with strict TypeScript; migrations are plain SQL files I can review.
+- **Elysia**: lightweight HTTP framework; small surface, no decorators, plays well with dependency-injected handlers.
+- **Telegram long polling**: no public domain or webhook endpoint required; the bot can run entirely on a private network.
 - **Telegram**: I use it a lot so wanted to explore implementing bots. Simple solution for providing UI and notifications.
-- **Telegraf**: simple intuitive API.
 
-## Implementation Details
+# Architecture
 
-There are 4 functions:
+The repo is a [Bun workspace](https://bun.sh/docs/cli/workspaces) monorepo with two top-level directories:
 
-- **TgBotApi**: HTTP Trigger that sets up Telegram webhooks and command handlers upon initialization. Webhook invocations will trigger command handlers which then delegate execution to a different HTTP Trigger: **HttpApi**.
+- `apps/` — runnable services.
+  - `backend` — HTTP API plus the Telegram long-polling loop.
+  - `pending-vat-worker` — one-shot job that re-checks pending VAT numbers.
+  - `db-migrator` — applies database schema migrations and grants runtime role privileges.
+  - `legacy-mongo-migrator` — one-shot importer from the legacy MongoDB database.
+  - `admin-web` — internal admin web app (React + Elysia BFF).
+- `packages/` — shared libraries consumed by apps.
+  - `core` — domain logic: VAT parsing, Telegram command handling, pending-job processing.
+  - `adapters` — Telegram HTTP client, VIES SOAP client, admin-notification channels.
+  - `db` — Drizzle schema and Postgres repositories.
+  - `config` — typed, zod-derived configuration parsers shared across services.
 
-- **HttpApi**: HTTP Trigger that can perform various actions with VAT numbers. This function can store VAT numbers in the MongoDB database and validate them against VIES API.
+See [`SELF_HOSTING.md`](./SELF_HOSTING.md) for a complete self-hosting guide, including the Docker Compose layout, environment variables, secret-file fallbacks, role separation, and operational commands.
 
-- **TimerTrigger**: Timer Trigger that checks all pending VAT numbers once an hour and notifies Telegram users when those numbers become valid. If **TimerTrigger** encounters unrecoverable error, it will put the VAT number in question into a separate DB collection (`VatRequestErrors`) which you can use to investigate the source of the issue and maybe re-register the VAT number for monitoring after the issue was resolved.
+# Run / Develop
 
-- **HttpAdminApi**: HTTP Trigger that you can use to manually re-register VAT numbers that encountered unrecoverable errors during validation process.
+Install Bun 1.3.14 and clone the repo. Then:
 
-## Run/Debug
-
-You can't run this as is.
-
-0. Use [VS Code](https://code.visualstudio.com) with [Azure Tools extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-node-azure-pack).
-1. [Create a Telegram bot](https://core.telegram.org/bots#3-how-do-i-create-a-bot). Put it's access token into settings file (see step 6).
-2. Go to **Azure > Databases** pane and create new "MongoDB" database (in Azure it's **Azure Cosmos DB for MongoDB API**). Put the connection string into settings file (see step 6).
-3. Since Telegram can only invoke webhooks for publicly available URLs, you'll need something like [localtunnel](https://github.com/localtunnel/localtunnel) or [ngrok](https://ngrok.com) to setup a proxy that will redirect traffic to your app running on `localhost`. Put the proxy URL into settings file (see step 6).
-4. Go to **Azure > Functions** pane, click on **Local Project**'s initialize button.
-5. Go to **Run and Debug** pane and try to run the project. Follow the steps to connect your project to your Azure Account.
-6. Modify `local.settings.json` at the root of the repo. It should contain following settings:
-
-```json
-{
-  "IsEncrypted": false,
-  "Values": {
-    "FUNCTIONS_WORKER_RUNTIME": "node",
-    "AzureWebJobsStorage": "YOUR_AUTOGENERATED_AZURE_CONNECTION_STRING",
-    "MONGODB_CONNECTION_STRING": "YOUR_MONGODB_CONNECTION_STRING",
-    "TG_BOT_TOKEN": "YOUR_TELEGRAM_BOT_TOKEN",
-    "TG_BOT_API_URL": "LOCAL_TUNNEL_OR_NGROK_OR_WHATEVER_BASE_URL/api/TgBotApi",
-    "TG_BOT_API_TOKEN": "", // not required for local deployment
-    "HTTP_API_URL": "http://localhost:7071/api/HttpApi",
-    "HTTP_API_TOKEN": "", // not required for local deployment
-    "VIES_URL": "https://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl",
-    "MAX_PENDING_VAT_NUMBERS_PER_USER": 10,
-    "VAT_NUMBER_EXPIRATION_DAYS": 90
-  }
-}
+```sh
+bun install
+bun run build
+bun run lint
+bun run test
+bun run typecheck
 ```
 
-7. You can now run your functions locally (either through `npm run` or through the VS Code's **Run and Debug** pane).
-8. You can also deploy your functions to Azure using **Azure > Functions** pane.
-9. After you've deployed your functions, you can now update **Azure > Functions > {Your Project} > Application Settings** to contain the same settings that you added to `local.settings.json`:
-   - `MONGODB_CONNECTION_STRING` and `TG_BOT_TOKEN` will be the same.
-   - `TG_BOT_API_URL` is the URL of **TgBotApi** function (without `code` param).
-   - `TG_BOT_API_TOKEN` is the auth code of **TgBotApi** function.
-   - `HTTP_API_URL` is the URL of **HttpApi** function (without `code` param).
-   - `HTTP_API_TOKEN` is the auth code of **HttpApi** function.
-   - Note that you can retrieve the URL with code by selecting "Copy Function URL" in the context menu of a specific deployed function (e.g. `https://{your-project-name}.azurewebsites.net/api/httpapi?code={http-api-function-auth-code}`).
-   - `MAX_PENDING_APP_NUMBERS_PER_USER` should be self-explanatory.
-   - `VAT_NUMBER_EXPIRATION_DAYS` defines a period after which VAT number should stop being monitored (to handle the case when it never becomes valid).
+To run the backend in dev mode with auto-reload:
 
-## Tests
+```sh
+bun run dev:backend
+```
 
-### Unit Tests
+The Telegram polling loop calls `deleteWebhook` before starting so that any webhook the Bot API still has registered for the bot cannot intercept updates.
 
-You need to create `.env.test` file first so configuration can be initialized properly. You can just duplicate `.env.example` in this case.
-You can run unit tests with `npm run test`.
-Tests are written with [mocha](https://mochajs.org), [chai](https://www.chaijs.com) and [sinon](https://sinonjs.org).
+To run the admin web app in dev mode:
 
-### E2E
+```sh
+bun run dev:admin-web
+```
 
-Tests are located in the [Admin Portal](https://github.com/megafinz/ViesVatCheckerBotAdminPortal) repo and are supposed to be executed against the backend running in E2E mode.
+## Self-host with Docker Compose
 
-E2E mode is just an [express](https://expressjs.com) server reusing the same handlers that are used in Azure Functions APIs + a little extra helpers.
+The repo ships a multi-stage Docker setup for self-hosted deployments. See [`SELF_HOSTING.md`](./SELF_HOSTING.md) for the full guide.
 
-You need to create `.env.e2e` file first so configuration can be initialized properly. You can just duplicate `.env.example` in this case.
-You can run backend in E2E mode with `npm run start:e2e`.
+```sh
+cp .env.example .env
+# edit .env to set TG_BOT_TOKEN, INTERNAL_API_TOKEN, and database passwords
+docker compose up -d db
+docker compose run --rm db-migrator
+docker compose up -d backend
+docker compose --profile admin up -d admin-web
+docker compose --profile scheduler up -d pending-vat-worker-cron
+```
+
+# Tests
+
+Unit and integration tests live next to the code as `*.test.ts` files and run with Bun's built-in test runner. Postgres repository integration tests skip themselves unless `DATABASE_URL` is set.
+
+```sh
+bun run test
+```
+
+End-to-end tests run against the locally composed stack:
+
+```sh
+bun run smoke:compose
+```
 
 # Why Does It Do That?
 
@@ -102,7 +102,3 @@ When you register an entity in EU, chances are that you need to be registered in
 ## Alternative Use Case
 
 You need to verify that some other entity has a valid VAT number for transactions within EU.
-
-# Anything Else Worth Looking At?
-
-Simple admin portal app that will allow you to resolve errors more conveniently than calling the admin API by hand: https://github.com/megafinz/ViesVatCheckerBotAdminPortal.

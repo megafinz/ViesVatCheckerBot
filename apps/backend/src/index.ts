@@ -109,6 +109,9 @@ export function createBackendRuntime(options: BackendRuntimeOptions) {
   const stopPolling = options.config.pollingEnabled
     ? startPollingLoop({
         intervalMs: options.config.pollingIntervalMs,
+        setup: async () => {
+          await options.telegram.deleteWebhook();
+        },
         pollOnce: async (offset) =>
           await pollTelegramOnce(
             {
@@ -124,6 +127,7 @@ export function createBackendRuntime(options: BackendRuntimeOptions) {
                   vies: options.vies
                 });
               },
+              maxUpdatesPerCycle: 50,
               timeoutSeconds: 30
             },
             offset
@@ -190,13 +194,17 @@ export async function startBackend<Db>(
 
 interface PollingLoopOptions {
   intervalMs: number;
+  setup?: () => Promise<void>;
   pollOnce(offset?: number): Promise<number | undefined>;
 }
+
+const MAX_BACKOFF_MS = 60_000;
 
 function startPollingLoop(options: PollingLoopOptions): () => void {
   let offset: number | undefined;
   let stopped = false;
   let timer: Timer | undefined;
+  let consecutiveErrors = 0;
 
   const tick = async () => {
     if (stopped) {
@@ -204,13 +212,29 @@ function startPollingLoop(options: PollingLoopOptions): () => void {
     }
 
     try {
-      offset = await options.pollOnce(offset);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      if (!stopped) {
-        timer = setTimeout(tick, options.intervalMs);
+      if (options.setup) {
+        await options.setup();
       }
+      offset = await options.pollOnce(offset);
+      consecutiveErrors = 0;
+    } catch (error) {
+      consecutiveErrors += 1;
+      const backoff = Math.min(
+        MAX_BACKOFF_MS,
+        options.intervalMs * 2 ** (consecutiveErrors - 1)
+      );
+      console.error(
+        `Telegram polling failed (attempt ${consecutiveErrors}); retrying in ${backoff}ms`,
+        error
+      );
+      if (!stopped) {
+        timer = setTimeout(tick, backoff);
+      }
+      return;
+    }
+
+    if (!stopped) {
+      timer = setTimeout(tick, options.intervalMs);
     }
   };
 

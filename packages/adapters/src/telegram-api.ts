@@ -11,6 +11,7 @@ export interface TelegramUpdate {
 }
 
 export interface TelegramPollingApi {
+  deleteWebhook(): Promise<void>;
   getUpdates(request: {
     offset?: number;
     timeoutSeconds: number;
@@ -36,6 +37,10 @@ export function createTelegramApi(
   const fetchImpl = options.fetch ?? fetch;
 
   return {
+    async deleteWebhook() {
+      await telegramRequest(options.botToken, 'deleteWebhook', {}, fetchImpl);
+    },
+
     async getUpdates(request) {
       return await telegramRequest<TelegramUpdate[]>(
         options.botToken,

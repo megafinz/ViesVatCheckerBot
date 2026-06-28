@@ -76,7 +76,11 @@ test('createPendingVatWorkerRuntime builds a logger admin notifier when configur
         }
       ],
       removeVatRequest: async () => false,
-      demoteVatRequestToError: async () => null
+      demoteVatRequestToError: async (vatRequest, error) => ({
+        id: 'error-1',
+        vatRequest,
+        error
+      })
     },
     telegram: {
       sendMessage: async () => {}
@@ -133,7 +137,11 @@ test('createPendingVatWorkerRuntime builds telegram and ntfy admin notifiers whe
         }
       ],
       removeVatRequest: async () => false,
-      demoteVatRequestToError: async () => null
+      demoteVatRequestToError: async (vatRequest, error) => ({
+        id: 'error-1',
+        vatRequest,
+        error
+      })
     },
     telegram: {
       sendMessage: async (chatId, text) => {

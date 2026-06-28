@@ -10,6 +10,7 @@ test('pollTelegramOnce fetches updates and advances offset after each handled up
   const nextOffset = await pollTelegramOnce(
     {
       api: {
+        deleteWebhook: async () => {},
         getUpdates: async (request) => {
           getUpdatesCalls.push(request);
           return [
@@ -29,4 +30,32 @@ test('pollTelegramOnce fetches updates and advances offset after each handled up
   expect(getUpdatesCalls).toEqual([{ offset: 99, timeoutSeconds: 30 }]);
   expect(handledUpdates.map((update) => update.update_id)).toEqual([100, 101]);
   expect(nextOffset).toBe(102);
+});
+
+test('pollTelegramOnce caps processed updates per cycle when maxUpdatesPerCycle is set', async () => {
+  const handledUpdates: TelegramUpdate[] = [];
+
+  const nextOffset = await pollTelegramOnce(
+    {
+      api: {
+        deleteWebhook: async () => {},
+        getUpdates: async () => [
+          { update_id: 200, message: { chat: { id: 1 }, text: '/list' } },
+          { update_id: 201, message: { chat: { id: 1 }, text: '/list' } },
+          { update_id: 202, message: { chat: { id: 1 }, text: '/list' } }
+        ]
+      },
+      handleUpdate: async (update) => {
+        handledUpdates.push(update);
+      },
+      maxUpdatesPerCycle: 2,
+      timeoutSeconds: 30
+    },
+    199
+  );
+
+  expect(handledUpdates.map((update) => update.update_id)).toEqual([200, 201]);
+  // Offset must point at the first unprocessed update so the next cycle
+  // resumes from there.
+  expect(nextOffset).toBe(202);
 });
