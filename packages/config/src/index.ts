@@ -45,7 +45,79 @@ const envCsv = z
 
 const NodeEnvSchema = z.enum(['development', 'test', 'production']);
 
-const BackendEnvSchema = z.object({
+export type AdminNotificationChannel = z.infer<
+  typeof AdminNotificationChannelSchema
+>;
+
+const BackendConfigSchema = z.object({
+  adminNotifications: z.object({
+    channels: z.array(AdminNotificationChannelSchema),
+    ntfy: z.object({
+      token: z.string().min(1).optional(),
+      topic: z.string().min(1).optional(),
+      url: z.url().optional()
+    }),
+    telegram: z.object({
+      chatIds: z.array(z.string().min(1))
+    })
+  }),
+  database: z.object({
+    host: z.string().min(1),
+    name: z.string().min(1),
+    password: z.string().min(1),
+    port: z.number().int().positive(),
+    user: z.string().min(1)
+  }),
+  http: z.object({
+    host: z.string().min(1),
+    port: z.number().int().positive()
+  }),
+  internalApi: z.object({
+    token: z.string().min(1)
+  }),
+  nodeEnv: NodeEnvSchema,
+  telegram: z.object({
+    botToken: z.string().min(1),
+    pollingEnabled: z.boolean(),
+    pollingIntervalMs: z.number().int().positive()
+  }),
+  vatNumbers: z.object({
+    expirationDays: z.number().int().positive(),
+    maxPendingPerUser: z.number().int().positive()
+  }),
+  vies: z.object({
+    url: z.url()
+  })
+});
+
+export type BackendConfig = z.infer<typeof BackendConfigSchema>;
+
+const AdminWebConfigSchema = z.object({
+  backend: z.object({
+    url: z.url()
+  }),
+  http: z.object({
+    host: z.string().min(1),
+    port: z.number().int().positive()
+  }),
+  internalApi: z.object({
+    token: z.string().min(1)
+  })
+});
+
+export type AdminWebConfig = z.infer<typeof AdminWebConfigSchema>;
+
+const DatabaseConfigSchema = z.object({
+  host: z.string().min(1),
+  name: z.string().min(1),
+  password: z.string().min(1),
+  port: z.number().int().positive(),
+  user: z.string().min(1)
+});
+
+export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
+
+const BackendEnvObjectSchema = z.object({
   ADMIN_NOTIFICATION_CHANNELS: envCsv.default([]),
   ADMIN_NTFY_TOKEN: envString.optional(),
   ADMIN_NTFY_TOPIC: envString.optional(),
@@ -70,94 +142,14 @@ const BackendEnvSchema = z.object({
   VIES_URL: envUrl
 });
 
-const AdminWebEnvSchema = z.object({
-  ADMIN_BACKEND_URL: envUrl,
-  HOST: envString.default('0.0.0.0'),
-  INTERNAL_API_TOKEN: envString,
-  PORT: envNumber.default(8081)
-});
+const BackendEnvSchema = BackendEnvObjectSchema.transform(
+  (env): BackendConfig => toBackendConfig(env)
+);
 
-const DatabaseEnvSchema = z.object({
-  DATABASE_HOST: envString,
-  DATABASE_NAME: envString,
-  DATABASE_PASSWORD: envString,
-  DATABASE_PORT: envNumber.default(5432),
-  DATABASE_USER: envString
-});
-
-const HttpConfigSchema = z.object({
-  host: z.string().min(1),
-  port: z.number().int().positive()
-});
-
-const InternalApiConfigSchema = z.object({
-  token: z.string().min(1)
-});
-
-const DatabaseConfigSchema = z.object({
-  host: z.string().min(1),
-  name: z.string().min(1),
-  password: z.string().min(1),
-  port: z.number().int().positive(),
-  user: z.string().min(1)
-});
-
-const TelegramConfigSchema = z.object({
-  botToken: z.string().min(1),
-  pollingEnabled: z.boolean(),
-  pollingIntervalMs: z.number().int().positive()
-});
-
-const VatNumbersConfigSchema = z.object({
-  expirationDays: z.number().int().positive(),
-  maxPendingPerUser: z.number().int().positive()
-});
-
-const ViesConfigSchema = z.object({
-  url: z.url()
-});
-
-const AdminTelegramConfigSchema = z.object({
-  chatIds: z.array(z.string().min(1))
-});
-
-const AdminNtfyConfigSchema = z.object({
-  token: z.string().min(1).optional(),
-  topic: z.string().min(1).optional(),
-  url: z.url().optional()
-});
-
-const AdminNotificationsConfigSchema = z.object({
-  channels: z.array(AdminNotificationChannelSchema),
-  ntfy: AdminNtfyConfigSchema,
-  telegram: AdminTelegramConfigSchema
-});
-
-const BackendConfigSchema = z.object({
-  adminNotifications: AdminNotificationsConfigSchema,
-  database: DatabaseConfigSchema,
-  http: HttpConfigSchema,
-  internalApi: InternalApiConfigSchema,
-  nodeEnv: NodeEnvSchema,
-  telegram: TelegramConfigSchema,
-  vatNumbers: VatNumbersConfigSchema,
-  vies: ViesConfigSchema
-});
-
-const AdminWebBackendConfigSchema = z.object({
-  url: z.url()
-});
-
-const AdminWebConfigSchema = z.object({
-  backend: AdminWebBackendConfigSchema,
-  http: HttpConfigSchema,
-  internalApi: InternalApiConfigSchema
-});
-
-function buildBackendConfig(
-  env: z.infer<typeof BackendEnvSchema>
-): z.infer<typeof BackendConfigSchema> {
-  const explicitChannels: z.infer<typeof AdminNotificationChannelSchema>[] =
+function toBackendConfig(
+  env: z.infer<typeof BackendEnvObjectSchema>
+): BackendConfig {
+  const explicitChannels: AdminNotificationChannel[] =
     env.ADMIN_NOTIFICATION_CHANNELS.map((channel) =>
       AdminNotificationChannelSchema.parse(channel)
     );
@@ -165,8 +157,9 @@ function buildBackendConfig(
     explicitChannels.length === 0 &&
     env.NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS &&
     Boolean(env.TG_ADMIN_CHAT_ID);
-  const channels: z.infer<typeof AdminNotificationChannelSchema>[] =
-    legacyTelegramEnabled ? ['telegram'] : explicitChannels;
+  const channels: AdminNotificationChannel[] = legacyTelegramEnabled
+    ? ['telegram']
+    : explicitChannels;
   const telegramChatIds = legacyTelegramEnabled
     ? [env.TG_ADMIN_CHAT_ID as string]
     : env.ADMIN_TELEGRAM_CHAT_IDS;
@@ -183,7 +176,7 @@ function buildBackendConfig(
     throw new Error('Invalid configuration: ADMIN_NTFY_TOPIC');
   }
 
-  return BackendConfigSchema.parse({
+  return {
     adminNotifications: {
       channels,
       ntfy: {
@@ -222,18 +215,48 @@ function buildBackendConfig(
     vies: {
       url: env.VIES_URL
     }
-  });
+  };
 }
 
-export type AdminNotificationChannel = z.infer<
-  typeof AdminNotificationChannelSchema
->;
+const AdminWebEnvObjectSchema = z.object({
+  ADMIN_BACKEND_URL: envUrl,
+  HOST: envString.default('0.0.0.0'),
+  INTERNAL_API_TOKEN: envString,
+  PORT: envNumber.default(8081)
+});
 
-export type BackendConfig = z.infer<typeof BackendConfigSchema>;
+const AdminWebEnvSchema = AdminWebEnvObjectSchema.transform(
+  (env): AdminWebConfig => ({
+    backend: {
+      url: env.ADMIN_BACKEND_URL
+    },
+    http: {
+      host: env.HOST,
+      port: env.PORT
+    },
+    internalApi: {
+      token: env.INTERNAL_API_TOKEN
+    }
+  })
+);
 
-export type DatabaseConfig = BackendConfig['database'];
+const DatabaseEnvObjectSchema = z.object({
+  DATABASE_HOST: envString,
+  DATABASE_NAME: envString,
+  DATABASE_PASSWORD: envString,
+  DATABASE_PORT: envNumber.default(5432),
+  DATABASE_USER: envString
+});
 
-export type AdminWebConfig = z.infer<typeof AdminWebConfigSchema>;
+const DatabaseEnvSchema = DatabaseEnvObjectSchema.transform(
+  (env): DatabaseConfig => ({
+    host: env.DATABASE_HOST,
+    name: env.DATABASE_NAME,
+    password: env.DATABASE_PASSWORD,
+    port: env.DATABASE_PORT,
+    user: env.DATABASE_USER
+  })
+);
 
 export function parseDatabaseConfig(env: Env = process.env): DatabaseConfig {
   const preparedEnv = resolveSecretFiles(env, {
@@ -246,13 +269,7 @@ export function parseDatabaseConfig(env: Env = process.env): DatabaseConfig {
     throw new Error(formatConfigError(parsed.error));
   }
 
-  return {
-    host: parsed.data.DATABASE_HOST,
-    name: parsed.data.DATABASE_NAME,
-    password: parsed.data.DATABASE_PASSWORD,
-    port: parsed.data.DATABASE_PORT,
-    user: parsed.data.DATABASE_USER
-  };
+  return parsed.data;
 }
 
 export function parseBackendConfig(env: Env = process.env): BackendConfig {
@@ -263,13 +280,13 @@ export function parseBackendConfig(env: Env = process.env): BackendConfig {
     TG_BOT_TOKEN: 'TG_BOT_TOKEN_FILE'
   });
 
-  const parsedEnv = BackendEnvSchema.safeParse(preparedEnv);
+  const parsed = BackendEnvSchema.safeParse(preparedEnv);
 
-  if (!parsedEnv.success) {
-    throw new Error(formatConfigError(parsedEnv.error));
+  if (!parsed.success) {
+    throw new Error(formatConfigError(parsed.error));
   }
 
-  return buildBackendConfig(parsedEnv.data);
+  return parsed.data;
 }
 
 export function parseAdminWebConfig(env: Env = process.env): AdminWebConfig {
@@ -283,18 +300,7 @@ export function parseAdminWebConfig(env: Env = process.env): AdminWebConfig {
     throw new Error(formatConfigError(parsed.error));
   }
 
-  return AdminWebConfigSchema.parse({
-    backend: {
-      url: parsed.data.ADMIN_BACKEND_URL
-    },
-    http: {
-      host: parsed.data.HOST,
-      port: parsed.data.PORT
-    },
-    internalApi: {
-      token: parsed.data.INTERNAL_API_TOKEN
-    }
-  });
+  return parsed.data;
 }
 
 function resolveSecretFiles(
