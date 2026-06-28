@@ -4,7 +4,7 @@ import { z } from 'zod';
 type Env = Record<string, string | undefined>;
 
 const envString = z.string().trim().min(1);
-const envUrl = envString.url();
+const envUrl = z.url();
 const envNumber = z.coerce.number().int().positive();
 
 const envBoolean = z.preprocess(
@@ -114,7 +114,7 @@ const VatNumbersConfigSchema = z.object({
 });
 
 const ViesConfigSchema = z.object({
-  url: z.string().url()
+  url: z.url()
 });
 
 const AdminTelegramConfigSchema = z.object({
@@ -124,7 +124,7 @@ const AdminTelegramConfigSchema = z.object({
 const AdminNtfyConfigSchema = z.object({
   token: z.string().min(1).optional(),
   topic: z.string().min(1).optional(),
-  url: z.string().url().optional()
+  url: z.url().optional()
 });
 
 const AdminNotificationsConfigSchema = z.object({
@@ -145,7 +145,7 @@ const BackendConfigSchema = z.object({
 });
 
 const AdminWebBackendConfigSchema = z.object({
-  url: z.string().url()
+  url: z.url()
 });
 
 const AdminWebConfigSchema = z.object({
