@@ -15,7 +15,6 @@ The durable runtime is:
 
 - Docker with Docker Compose.
 - A Telegram bot token from BotFather.
-- A long random value for `INTERNAL_API_TOKEN`.
 
 ## Configuration
 
@@ -29,7 +28,6 @@ At minimum, set:
 
 ```sh
 TG_BOT_TOKEN=your-telegram-bot-token
-INTERNAL_API_TOKEN=replace-with-a-long-random-secret
 DATABASE_SUPERUSER_PASSWORD=replace-with-a-superuser-password
 DATABASE_MIGRATOR_PASSWORD=replace-with-a-migrator-password
 DATABASE_RUNTIME_PASSWORD=replace-with-a-runtime-password
@@ -39,7 +37,6 @@ For container secret stores, you can set file variables instead of direct secret
 
 ```sh
 TG_BOT_TOKEN_FILE=/run/secrets/tg_bot_token
-INTERNAL_API_TOKEN_FILE=/run/secrets/internal_api_token
 DATABASE_SUPERUSER_PASSWORD_FILE=/run/secrets/db_superuser_password
 DATABASE_MIGRATOR_PASSWORD_FILE=/run/secrets/db_migrator_password
 DATABASE_RUNTIME_PASSWORD_FILE=/run/secrets/db_runtime_password
@@ -51,14 +48,11 @@ Useful options:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `HTTP_PUBLISHED_PORT` | `8080` | Host port for the backend health/API server. |
-| `ADMIN_WEB_PUBLISHED_PORT` | `8081` | Host port for the optional internal admin web service. |
-| `ADMIN_BACKEND_URL` | `http://127.0.0.1:8080` | Backend URL used by local admin web development. Compose sets this to the backend service URL. |
-| `DATABASE_PUBLISHED_PORT` | `54329` | Host port for PostgreSQL. Set only if you need host access. |
+| `ADMIN_BACKEND_URL` | `http://localhost:8080` | Backend URL the admin web service calls when proxying API requests. Compose overrides this to `http://backend:8080` for in-network use. |
 | `DATABASE_SUPERUSER` | `viesvatchecker_superadmin` | PostgreSQL bootstrap owner used by the database container. |
 | `DATABASE_MIGRATOR_USER` | `viesvatchecker_migrator` | Role used by `db-migrator` to apply schema changes. |
 | `DATABASE_RUNTIME_USER` | `viesvatchecker_runtime` | Lower-privilege role used by backend and worker services. |
-| `*_FILE` secrets | empty | Optional file paths for Telegram, internal API, and database passwords. |
+| `*_FILE` secrets | empty | Optional file paths for Telegram and database passwords. |
 | `TG_POLLING_ENABLED` | `true` | Enables Telegram long polling in the backend. |
 | `TG_POLLING_INTERVAL_MS` | `1000` | Delay between polling cycles. |
 | `PENDING_VAT_WORKER_CRON` | `0 * * * *` | Cron schedule for pending VAT checks. |
@@ -134,17 +128,21 @@ Start the optional admin web service:
 docker compose --profile admin up -d admin-web
 ```
 
-Check backend health:
+The admin web UI is published on host port `3000` by default. Open `http://<host>:3000/` to use it.
 
-```sh
-curl http://localhost:${HTTP_PUBLISHED_PORT:-8080}/health
-```
+The backend HTTP service and PostgreSQL database stay on the internal Docker network. The backend is reachable from `admin-web` over `http://backend:8080`, but neither is published to the host by default.
 
 Follow logs:
 
 ```sh
 docker compose logs -f backend
 ```
+
+## Production Hardening
+
+The default `docker-compose.yml` only publishes the admin web service. Anything that talks to the backend or the database goes through the internal Docker network. This is intentional and is enough for a typical home or hobby deployment where you front the admin web with a tunnel, reverse proxy, or VPN (e.g. Twingate, Cloudflare Tunnel, Tailscale).
+
+If you want to expose the admin web to the public internet, put it behind a reverse proxy that terminates TLS and adds authentication. Exposing port `3000` directly to the internet trusts every caller with full admin access to the application.
 
 ## Run Pending VAT Checks
 

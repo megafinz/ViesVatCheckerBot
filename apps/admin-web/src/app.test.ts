@@ -4,8 +4,7 @@ import { createAdminWebApp } from './app';
 test('serves the Vite React shell from the root route', async () => {
   const app = createAdminWebApp({
     backendUrl: 'http://backend:8080',
-    fetch: async () => new Response('unexpected', { status: 500 }),
-    internalApiToken: 'internal-token'
+    fetch: async () => new Response('unexpected', { status: 500 })
   });
 
   const response = await app.handle(new Request('http://localhost/'));
@@ -17,7 +16,7 @@ test('serves the Vite React shell from the root route', async () => {
   expect(html).toContain('/src/client/main.tsx');
 });
 
-test('proxies dashboard reads through server-side authenticated API routes', async () => {
+test('proxies dashboard reads through server-side API routes', async () => {
   const backendRequests: Request[] = [];
   const app = createAdminWebApp({
     backendUrl: 'http://backend:8080',
@@ -39,8 +38,7 @@ test('proxies dashboard reads through server-side authenticated API routes', asy
         return Response.json([{ id: 'error-1' }]);
       }
       return new Response('not found', { status: 404 });
-    },
-    internalApiToken: 'internal-token'
+    }
   });
 
   await expectJson(
@@ -58,24 +56,16 @@ test('proxies dashboard reads through server-side authenticated API routes', asy
     'http://backend:8080/internal/admin/vat-requests',
     'http://backend:8080/internal/admin/vat-request-errors'
   ]);
-  expect(
-    backendRequests.map((request) => request.headers.get('authorization'))
-  ).toEqual([
-    'Bearer internal-token',
-    'Bearer internal-token',
-    'Bearer internal-token'
-  ]);
 });
 
-test('proxies pending VAT updates through a server-side authenticated API route', async () => {
+test('proxies pending VAT updates through a server-side API route', async () => {
   const backendRequests: Request[] = [];
   const app = createAdminWebApp({
     backendUrl: 'http://backend:8080',
     fetch: async (request) => {
       backendRequests.push(request);
       return new Response(null, { status: 204 });
-    },
-    internalApiToken: 'internal-token'
+    }
   });
 
   const response = await app.handle(
@@ -96,9 +86,6 @@ test('proxies pending VAT updates through a server-side authenticated API route'
   expect(backendRequests[0].url).toBe(
     'http://backend:8080/internal/admin/vat-requests'
   );
-  expect(backendRequests[0].headers.get('authorization')).toBe(
-    'Bearer internal-token'
-  );
   expect(await backendRequests[0].json()).toEqual({
     newVatNumber: 'PL1112223334',
     telegramChatId: '1001',
@@ -106,15 +93,14 @@ test('proxies pending VAT updates through a server-side authenticated API route'
   });
 });
 
-test('proxies VAT request error actions through server-side authenticated API routes', async () => {
+test('proxies VAT request error actions through server-side API routes', async () => {
   const backendRequests: Request[] = [];
   const app = createAdminWebApp({
     backendUrl: 'http://backend:8080',
     fetch: async (request) => {
       backendRequests.push(request);
       return new Response(null, { status: 204 });
-    },
-    internalApiToken: 'internal-token'
+    }
   });
 
   expect(

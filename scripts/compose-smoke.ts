@@ -11,15 +11,11 @@ export function buildComposeSmokeEnvironment(
   return {
     ...process.env,
     ADMIN_NOTIFICATION_CHANNELS: '',
-    ADMIN_WEB_PUBLISHED_PORT: '0',
     COMPOSE_PROJECT_NAME: projectName,
     DATABASE_MIGRATOR_PASSWORD: `migrator-${randomUUID()}`,
     DATABASE_NAME: 'viesvatchecker',
-    DATABASE_PUBLISHED_PORT: '0',
     DATABASE_RUNTIME_PASSWORD: `runtime-${randomUUID()}`,
     DATABASE_SUPERUSER_PASSWORD: `superuser-${randomUUID()}`,
-    HTTP_PUBLISHED_PORT: '0',
-    INTERNAL_API_TOKEN: `internal-${randomUUID()}`,
     TG_BOT_TOKEN: 'compose-smoke-token',
     TG_POLLING_ENABLED: 'false'
   };
@@ -28,6 +24,10 @@ export function buildComposeSmokeEnvironment(
 export function buildComposeSmokePlan(projectName: string): ComposeSmokeStep[] {
   const baseArgs = [
     'compose',
+    '-f',
+    'docker-compose.yml',
+    '-f',
+    'docker-compose.dev.yml',
     '--profile',
     'admin',
     '--project-name',
@@ -52,11 +52,7 @@ export function buildComposeSmokePlan(projectName: string): ComposeSmokeStep[] {
       name: 'start runtime services'
     },
     {
-      args: [...baseArgs, 'port', 'backend', '8080'],
-      name: 'read backend port'
-    },
-    {
-      args: [...baseArgs, 'port', 'admin-web', '8081'],
+      args: [...baseArgs, 'port', 'admin-web', '3000'],
       name: 'read admin web port'
     }
   ];
@@ -72,18 +68,10 @@ export async function runComposeSmoke() {
       await runCommand('docker', step.args, env, step.name);
     }
 
-    const backendPort = parsePublishedPort(
+    const adminWebPort = parsePublishedPort(
       await runCommand('docker', plan[4].args, env, plan[4].name)
     );
-    const adminWebPort = parsePublishedPort(
-      await runCommand('docker', plan[5].args, env, plan[5].name)
-    );
 
-    await waitForText(
-      `http://127.0.0.1:${backendPort}/health`,
-      '"ok":true',
-      'backend health'
-    );
     await waitForText(
       `http://127.0.0.1:${adminWebPort}/`,
       '<div id="root"></div>',
@@ -99,6 +87,10 @@ export async function runComposeSmoke() {
       'docker',
       [
         'compose',
+        '-f',
+        'docker-compose.yml',
+        '-f',
+        'docker-compose.dev.yml',
         '--profile',
         'admin',
         '--project-name',

@@ -17,7 +17,6 @@ test('createBackendRuntime creates the health app and leaves polling stopped whe
   const runtime = createBackendRuntime({
     config: {
       expirationDays: 90,
-      internalApiToken: 'internal-token',
       maxPendingPerUser: 10,
       pollingEnabled: false,
       pollingIntervalMs: 1000
@@ -58,11 +57,10 @@ test('createBackendRuntime creates the health app and leaves polling stopped whe
   expect(runtime.stop).toBeTypeOf('function');
 });
 
-test('createBackendRuntime exposes authenticated internal admin routes', async () => {
+test('createBackendRuntime exposes internal admin routes', async () => {
   const runtime = createBackendRuntime({
     config: {
       expirationDays: 90,
-      internalApiToken: 'internal-token',
       maxPendingPerUser: 10,
       pollingEnabled: false,
       pollingIntervalMs: 1000
@@ -99,9 +97,7 @@ test('createBackendRuntime exposes authenticated internal admin routes', async (
   });
 
   const response = await runtime.app.handle(
-    new Request('http://localhost/internal/admin/vat-requests', {
-      headers: { authorization: 'Bearer internal-token' }
-    })
+    new Request('http://localhost/internal/admin/vat-requests')
   );
 
   expect(response.status).toBe(200);
@@ -114,7 +110,6 @@ test('createBackendRuntime calls deleteWebhook before polling starts', async () 
   const runtime = createBackendRuntime({
     config: {
       expirationDays: 90,
-      internalApiToken: 'internal-token',
       maxPendingPerUser: 10,
       pollingEnabled: true,
       pollingIntervalMs: 5
@@ -162,7 +157,6 @@ test('createBackendRuntime backs off when Telegram polling keeps failing', async
   const runtime = createBackendRuntime({
     config: {
       expirationDays: 90,
-      internalApiToken: 'internal-token',
       maxPendingPerUser: 10,
       pollingEnabled: true,
       pollingIntervalMs: 5
@@ -216,7 +210,6 @@ test('startBackend starts without running database migrations', async () => {
       DATABASE_PORT: '5432',
       DATABASE_USER: 'viesvatchecker_runtime',
       HOST: '127.0.0.1',
-      INTERNAL_API_TOKEN: 'internal-token',
       PORT: '18080',
       TG_BOT_TOKEN: 'telegram-token',
       TG_POLLING_ENABLED: 'false',

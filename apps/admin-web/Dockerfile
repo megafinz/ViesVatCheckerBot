@@ -18,6 +18,6 @@ COPY --from=build /app/apps/admin-web/dist/index.js ./index.js
 COPY --from=build /app/apps/admin-web/dist/client ./client
 
 USER bun
-EXPOSE 8081
+EXPOSE 3000
 
 CMD ["bun", "./index.js"]

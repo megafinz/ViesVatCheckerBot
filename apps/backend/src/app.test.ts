@@ -4,7 +4,6 @@ import { createBackendApp } from './app';
 test('health endpoint reports the backend status and polling mode', async () => {
   const app = createBackendApp({
     admin: {
-      internalApiToken: 'internal-token',
       repository: {
         getAllVatRequests: async () => [],
         getAllVatRequestErrors: async () => [],
@@ -30,7 +29,6 @@ test('health endpoint reports the backend status and polling mode', async () => 
 test('internal admin routes are attached to the backend app', async () => {
   const app = createBackendApp({
     admin: {
-      internalApiToken: 'internal-token',
       repository: {
         getAllVatRequests: async () => [
           {
@@ -51,9 +49,7 @@ test('internal admin routes are attached to the backend app', async () => {
   });
 
   const response = await app.handle(
-    new Request('http://localhost/internal/admin/vat-requests', {
-      headers: { authorization: 'Bearer internal-token' }
-    })
+    new Request('http://localhost/internal/admin/vat-requests')
   );
 
   expect(response.status).toBe(200);

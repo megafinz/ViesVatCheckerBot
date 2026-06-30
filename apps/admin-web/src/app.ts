@@ -5,7 +5,6 @@ interface AdminWebAppOptions {
   backendUrl: string;
   clientDistDir?: string;
   fetch(request: Request): Promise<Response>;
-  internalApiToken: string;
 }
 
 const developmentIndexHtml = `<!doctype html>
@@ -101,14 +100,8 @@ async function proxyBackendRequest(
   path: string,
   init: RequestInit = {}
 ): Promise<Response> {
-  const headers = new Headers(init.headers);
-  headers.set('authorization', `Bearer ${options.internalApiToken}`);
-
   const response = await options.fetch(
-    new Request(new URL(path, options.backendUrl), {
-      ...init,
-      headers
-    })
+    new Request(new URL(path, options.backendUrl), init)
   );
 
   return new Response(response.body, {

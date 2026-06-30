@@ -80,31 +80,16 @@ function createRepository(): AdminRepository {
   };
 }
 
-test('rejects internal admin requests without the bearer token', async () => {
-  const app = createAdminRoutes({
-    internalApiToken: 'secret',
-    repository: createRepository(),
-    telegram: { sendMessage: async () => {} }
-  });
-
-  const response = await app.handle(
-    new Request('http://localhost/internal/admin/vat-requests')
-  );
-
-  expect(response.status).toBe(401);
-});
-
-test('lists pending VAT requests for authenticated admin requests', async () => {
+test('lists pending VAT requests', async () => {
   const repository = createRepository();
   const app = createAdminRoutes({
-    internalApiToken: 'secret',
     repository,
     telegram: { sendMessage: async () => {} }
   });
 
   await repository.resolveVatRequestError('error-1');
   const response = await app.handle(
-    adminRequest('http://localhost/internal/admin/vat-requests')
+    new Request('http://localhost/internal/admin/vat-requests')
   );
 
   expect(response.status).toBe(200);
@@ -116,15 +101,14 @@ test('lists pending VAT requests for authenticated admin requests', async () => 
   ]);
 });
 
-test('lists VAT request errors for authenticated admin requests', async () => {
+test('lists VAT request errors', async () => {
   const app = createAdminRoutes({
-    internalApiToken: 'secret',
     repository: createRepository(),
     telegram: { sendMessage: async () => {} }
   });
 
   const response = await app.handle(
-    adminRequest('http://localhost/internal/admin/vat-request-errors')
+    new Request('http://localhost/internal/admin/vat-request-errors')
   );
 
   expect(response.status).toBe(200);
@@ -152,7 +136,6 @@ test('resolves one VAT request error and notifies the user when monitoring resum
   const messages: Array<{ chatId: string; text: string }> = [];
   const repository = createRepository();
   const app = createAdminRoutes({
-    internalApiToken: 'secret',
     repository,
     telegram: {
       sendMessage: async (chatId, text) => {
@@ -162,7 +145,7 @@ test('resolves one VAT request error and notifies the user when monitoring resum
   });
 
   const response = await app.handle(
-    adminRequest('http://localhost/internal/admin/vat-request-errors/error-1', {
+    new Request('http://localhost/internal/admin/vat-request-errors/error-1', {
       method: 'POST'
     })
   );
@@ -179,7 +162,6 @@ test('resolves one VAT request error and notifies the user when monitoring resum
 test('does not notify the user when resolving an error silently', async () => {
   const messages: Array<{ chatId: string; text: string }> = [];
   const app = createAdminRoutes({
-    internalApiToken: 'secret',
     repository: createRepository(),
     telegram: {
       sendMessage: async (chatId, text) => {
@@ -189,7 +171,7 @@ test('does not notify the user when resolving an error silently', async () => {
   });
 
   const response = await app.handle(
-    adminRequest(
+    new Request(
       'http://localhost/internal/admin/vat-request-errors/error-1/resolve?silent=true',
       { method: 'POST' }
     )
@@ -201,13 +183,12 @@ test('does not notify the user when resolving an error silently', async () => {
 
 test('returns 404 when resolving an unknown VAT request error', async () => {
   const app = createAdminRoutes({
-    internalApiToken: 'secret',
     repository: createRepository(),
     telegram: { sendMessage: async () => {} }
   });
 
   const response = await app.handle(
-    adminRequest('http://localhost/internal/admin/vat-request-errors/missing', {
+    new Request('http://localhost/internal/admin/vat-request-errors/missing', {
       method: 'POST'
     })
   );
@@ -220,13 +201,12 @@ test('returns 404 when resolving an unknown VAT request error', async () => {
 
 test('removes one VAT request error', async () => {
   const app = createAdminRoutes({
-    internalApiToken: 'secret',
     repository: createRepository(),
     telegram: { sendMessage: async () => {} }
   });
 
   const response = await app.handle(
-    adminRequest('http://localhost/internal/admin/vat-request-errors/error-1', {
+    new Request('http://localhost/internal/admin/vat-request-errors/error-1', {
       method: 'DELETE'
     })
   );
@@ -237,13 +217,12 @@ test('removes one VAT request error', async () => {
 test('resolves all VAT request errors', async () => {
   const repository = createRepository();
   const app = createAdminRoutes({
-    internalApiToken: 'secret',
     repository,
     telegram: { sendMessage: async () => {} }
   });
 
   const response = await app.handle(
-    adminRequest('http://localhost/internal/admin/vat-request-errors/resolve', {
+    new Request('http://localhost/internal/admin/vat-request-errors/resolve', {
       method: 'POST'
     })
   );
@@ -256,19 +235,15 @@ test('updates a pending VAT request number', async () => {
   const repository = createRepository();
   await repository.resolveVatRequestError('error-1');
   const app = createAdminRoutes({
-    internalApiToken: 'secret',
     repository,
     telegram: { sendMessage: async () => {} }
   });
 
   const response = await app.handle(
-    adminRequest('http://localhost/internal/admin/vat-requests', {
-      body: JSON.stringify({
-        telegramChatId: '123',
-        vatNumber: 'AA12345678',
-        newVatNumber: 'BB87654321'
-      }),
-      method: 'PATCH'
+    jsonRequest('http://localhost/internal/admin/vat-requests', {
+      telegramChatId: '123',
+      vatNumber: 'AA12345678',
+      newVatNumber: 'BB87654321'
     })
   );
 
@@ -286,19 +261,15 @@ test('rejects a VAT request update with a malformed VAT number', async () => {
   const repository = createRepository();
   await repository.resolveVatRequestError('error-1');
   const app = createAdminRoutes({
-    internalApiToken: 'secret',
     repository,
     telegram: { sendMessage: async () => {} }
   });
 
   const response = await app.handle(
-    adminRequest('http://localhost/internal/admin/vat-requests', {
-      body: JSON.stringify({
-        telegramChatId: '123',
-        vatNumber: 'AA12345678',
-        newVatNumber: 'BB12-34'
-      }),
-      method: 'PATCH'
+    jsonRequest('http://localhost/internal/admin/vat-requests', {
+      telegramChatId: '123',
+      vatNumber: 'AA12345678',
+      newVatNumber: 'BB12-34'
     })
   );
 
@@ -309,13 +280,14 @@ test('rejects a VAT request update with a malformed VAT number', async () => {
   expect(await repository.getAllVatRequests()).toEqual([pendingVatRequest]);
 });
 
-function adminRequest(url: string, init: RequestInit = {}) {
+function jsonRequest(
+  url: string,
+  body: Record<string, unknown>,
+  method: 'PATCH' = 'PATCH'
+): Request {
   return new Request(url, {
-    ...init,
-    headers: {
-      authorization: 'Bearer secret',
-      'content-type': 'application/json',
-      ...init.headers
-    }
+    body: JSON.stringify(body),
+    headers: { 'content-type': 'application/json' },
+    method
   });
 }

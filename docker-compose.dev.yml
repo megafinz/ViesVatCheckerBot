@@ -1,19 +1,24 @@
+# Development overrides for docker-compose.yml. Published ports and dev-friendly
+# defaults only — never use this file as the production deployment source of truth.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile admin up
+#
+# This file does NOT redefine services — it only adds `ports:` mappings and dev
+# overrides so the stack is reachable from the host without running each app
+# locally with `bun run dev:*`.
+
 services:
   db:
-    image: postgres:18.1-alpine
-    environment:
-      POSTGRES_DB: viesvatchecker
-      POSTGRES_PASSWORD: viesvatchecker
-      POSTGRES_USER: viesvatchecker
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U viesvatchecker -d viesvatchecker"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
     ports:
       - "54329:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
 
-volumes:
-  postgres-data:
+  backend:
+    environment:
+      NODE_ENV: development
+    ports:
+      - "8080:8080"
+
+  admin-web:
+    ports:
+      - "3000:3000"

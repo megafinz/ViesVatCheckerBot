@@ -6,7 +6,6 @@ test('startAdminWeb starts the app on configured host and port', async () => {
     {
       ADMIN_BACKEND_URL: 'http://backend:8080',
       HOST: '127.0.0.1',
-      INTERNAL_API_TOKEN: 'internal-token',
       PORT: '18081'
     },
     {

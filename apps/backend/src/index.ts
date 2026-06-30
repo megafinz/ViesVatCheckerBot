@@ -29,7 +29,6 @@ export { buildDatabaseUrl } from '@viesvatchecker/adapters';
 
 interface RuntimeConfig {
   expirationDays: number;
-  internalApiToken: string;
   maxPendingPerUser: number;
   pollingEnabled: boolean;
   pollingIntervalMs: number;
@@ -96,7 +95,6 @@ const defaultStartBackendDependencies: StartBackendDependencies<Database> = {
 export function createBackendRuntime(options: BackendRuntimeOptions) {
   const app = createBackendApp({
     admin: {
-      internalApiToken: options.config.internalApiToken,
       repository: options.repository,
       telegram: options.telegram
     },
@@ -167,7 +165,6 @@ export async function startBackend<Db>(
   const runtime = createBackendRuntime({
     config: {
       expirationDays: config.vatNumbers.expirationDays,
-      internalApiToken: config.internalApi.token,
       maxPendingPerUser: config.vatNumbers.maxPendingPerUser,
       pollingEnabled: config.telegram.pollingEnabled,
       pollingIntervalMs: config.telegram.pollingIntervalMs

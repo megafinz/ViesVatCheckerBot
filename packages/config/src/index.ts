@@ -5,6 +5,13 @@ type Env = Record<string, string | undefined>;
 
 const envString = z.string().trim().min(1);
 const envUrl = z.url();
+const envUrlWithDefault = (defaultValue: string) =>
+  z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : defaultValue))
+    .pipe(z.url());
 const envNumber = z.coerce.number().int().positive();
 
 const envBoolean = z.preprocess(
@@ -72,9 +79,6 @@ const BackendConfigSchema = z.object({
     host: z.string().min(1),
     port: z.number().int().positive()
   }),
-  internalApi: z.object({
-    token: z.string().min(1)
-  }),
   nodeEnv: NodeEnvSchema,
   telegram: z.object({
     botToken: z.string().min(1),
@@ -99,9 +103,6 @@ const AdminWebConfigSchema = z.object({
   http: z.object({
     host: z.string().min(1),
     port: z.number().int().positive()
-  }),
-  internalApi: z.object({
-    token: z.string().min(1)
   })
 });
 
@@ -129,7 +130,6 @@ const BackendEnvObjectSchema = z.object({
   DATABASE_PORT: envNumber.default(5432),
   DATABASE_USER: envString,
   HOST: envString.default('0.0.0.0'),
-  INTERNAL_API_TOKEN: envString,
   MAX_PENDING_VAT_NUMBERS_PER_USER: envNumber.default(10),
   NODE_ENV: NodeEnvSchema.default('development'),
   NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS: envBoolean.default(false),
@@ -199,9 +199,6 @@ function toBackendConfig(
       host: env.HOST,
       port: env.PORT
     },
-    internalApi: {
-      token: env.INTERNAL_API_TOKEN
-    },
     nodeEnv: env.NODE_ENV,
     telegram: {
       botToken: env.TG_BOT_TOKEN,
@@ -219,10 +216,9 @@ function toBackendConfig(
 }
 
 const AdminWebEnvObjectSchema = z.object({
-  ADMIN_BACKEND_URL: envUrl,
+  ADMIN_BACKEND_URL: envUrlWithDefault('http://localhost:8080'),
   HOST: envString.default('0.0.0.0'),
-  INTERNAL_API_TOKEN: envString,
-  PORT: envNumber.default(8081)
+  PORT: envNumber.default(3000)
 });
 
 const AdminWebEnvSchema = AdminWebEnvObjectSchema.transform(
@@ -233,9 +229,6 @@ const AdminWebEnvSchema = AdminWebEnvObjectSchema.transform(
     http: {
       host: env.HOST,
       port: env.PORT
-    },
-    internalApi: {
-      token: env.INTERNAL_API_TOKEN
     }
   })
 );
@@ -276,7 +269,6 @@ export function parseBackendConfig(env: Env = process.env): BackendConfig {
   const preparedEnv = resolveSecretFiles(env, {
     ADMIN_NTFY_TOKEN: 'ADMIN_NTFY_TOKEN_FILE',
     DATABASE_PASSWORD: 'DATABASE_PASSWORD_FILE',
-    INTERNAL_API_TOKEN: 'INTERNAL_API_TOKEN_FILE',
     TG_BOT_TOKEN: 'TG_BOT_TOKEN_FILE'
   });
 
@@ -290,9 +282,7 @@ export function parseBackendConfig(env: Env = process.env): BackendConfig {
 }
 
 export function parseAdminWebConfig(env: Env = process.env): AdminWebConfig {
-  const preparedEnv = resolveSecretFiles(env, {
-    INTERNAL_API_TOKEN: 'INTERNAL_API_TOKEN_FILE'
-  });
+  const preparedEnv = resolveSecretFiles(env);
 
   const parsed = AdminWebEnvSchema.safeParse(preparedEnv);
 
@@ -305,7 +295,7 @@ export function parseAdminWebConfig(env: Env = process.env): AdminWebConfig {
 
 function resolveSecretFiles(
   env: Env,
-  fileFallbacks: Record<string, string>
+  fileFallbacks: Record<string, string> = {}
 ): Env {
   const result = { ...env };
 

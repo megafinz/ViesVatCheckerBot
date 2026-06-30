@@ -71,13 +71,15 @@ The repo ships a multi-stage Docker setup for self-hosted deployments. See [`SEL
 
 ```sh
 cp .env.example .env
-# edit .env to set TG_BOT_TOKEN, INTERNAL_API_TOKEN, and database passwords
+# edit .env to set TG_BOT_TOKEN and the database passwords
 docker compose up -d db
 docker compose run --rm db-migrator
 docker compose up -d backend
 docker compose --profile admin up -d admin-web
 docker compose --profile scheduler up -d pending-vat-worker-cron
 ```
+
+The admin web UI is published on host port `3000`. Open `http://localhost:3000/` after the services are up.
 
 # Tests
 

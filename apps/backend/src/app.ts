@@ -7,7 +7,6 @@ import {
 
 export interface BackendAppOptions {
   admin: {
-    internalApiToken: string;
     repository: AdminRepository;
     telegram: AdminTelegram;
   };

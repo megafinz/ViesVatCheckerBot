@@ -177,7 +177,6 @@ test('startPendingVatWorker runs without database migrations', async () => {
       DATABASE_PASSWORD: 'runtime-secret',
       DATABASE_PORT: '5432',
       DATABASE_USER: 'viesvatchecker_runtime',
-      INTERNAL_API_TOKEN: 'internal-token',
       TG_BOT_TOKEN: 'telegram-token',
       VIES_URL: 'https://example.com/vies.wsdl'
     },

@@ -27,7 +27,6 @@ export interface AdminTelegram {
 }
 
 export interface AdminRoutesOptions {
-  internalApiToken: string;
   repository: AdminRepository;
   telegram: AdminTelegram;
 }
@@ -39,19 +38,7 @@ type UpdateVatRequestBody = {
 };
 
 export function createAdminRoutes(options: AdminRoutesOptions) {
-  const expectedAuthorization = `Bearer ${options.internalApiToken}`;
-
   return new Elysia()
-    .onBeforeHandle(({ request }) => {
-      if (
-        !timingSafeStringEquals(
-          request.headers.get('authorization'),
-          expectedAuthorization
-        )
-      ) {
-        return new Response('Unauthorized', { status: 401 });
-      }
-    })
     .get('/internal/admin/vat-requests', async () => {
       return await options.repository.getAllVatRequests();
     })
@@ -188,24 +175,4 @@ async function resolveError(input: {
 
 function isTruthy(value: unknown) {
   return value === true || value === 'true' || value === '1';
-}
-
-function timingSafeStringEquals(a: string | null, b: string) {
-  if (a === null) {
-    return false;
-  }
-
-  // Length difference leaks via the early return, but the token length is
-  // not secret and the header is constant per request, so this is fine for an
-  // internal-only bearer token check.
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  let mismatch = 0;
-  for (let i = 0; i < a.length; i += 1) {
-    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-
-  return mismatch === 0;
 }

@@ -25,8 +25,7 @@ export async function startAdminWeb(
   const config = parseAdminWebConfig(env);
   const app = createAdminWebApp({
     backendUrl: config.backend.url,
-    fetch,
-    internalApiToken: config.internalApi.token
+    fetch
   });
   const server = deps.listen(app, {
     hostname: config.http.host,

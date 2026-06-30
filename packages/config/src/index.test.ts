@@ -24,12 +24,11 @@ test('parses required backend environment', () => {
     DATABASE_PORT: '5433',
     DATABASE_USER: 'backend',
     HOST: '127.0.0.1',
-    INTERNAL_API_TOKEN: 'internal-token',
     MAX_PENDING_VAT_NUMBERS_PER_USER: '12',
     NODE_ENV: 'production',
     ADMIN_NOTIFICATION_CHANNELS: 'telegram',
     ADMIN_TELEGRAM_CHAT_IDS: '123,456',
-    PORT: '8081',
+    PORT: '3000',
     TG_BOT_TOKEN: 'telegram-token',
     TG_POLLING_INTERVAL_MS: '1500',
     VAT_NUMBER_EXPIRATION_DAYS: '30',
@@ -57,10 +56,7 @@ test('parses required backend environment', () => {
     },
     http: {
       host: '127.0.0.1',
-      port: 8081
-    },
-    internalApi: {
-      token: 'internal-token'
+      port: 3000
     },
     nodeEnv: 'production',
     telegram: {
@@ -84,7 +80,6 @@ test('uses defaults for optional backend environment', () => {
     DATABASE_NAME: 'viesvatchecker',
     DATABASE_PASSWORD: 'postgres-password',
     DATABASE_USER: 'backend',
-    INTERNAL_API_TOKEN: 'internal-token',
     TG_BOT_TOKEN: 'telegram-token',
     VIES_URL: 'https://example.com/vies.wsdl'
   });
@@ -115,11 +110,9 @@ test('reads secret values from file fallbacks', () => {
   const dir = mkdtempSync(join(tmpdir(), 'vies-config-'));
   tempDirs.push(dir);
   const databasePasswordFile = join(dir, 'database-password');
-  const internalTokenFile = join(dir, 'internal-token');
   const telegramTokenFile = join(dir, 'telegram-token');
 
   writeFileSync(databasePasswordFile, 'postgres-password\n');
-  writeFileSync(internalTokenFile, 'internal-token\n');
   writeFileSync(telegramTokenFile, 'telegram-token\n');
 
   const config = parseBackendConfig({
@@ -127,13 +120,11 @@ test('reads secret values from file fallbacks', () => {
     DATABASE_NAME: 'viesvatchecker',
     DATABASE_PASSWORD_FILE: databasePasswordFile,
     DATABASE_USER: 'backend',
-    INTERNAL_API_TOKEN_FILE: internalTokenFile,
     TG_BOT_TOKEN_FILE: telegramTokenFile,
     VIES_URL: 'https://example.com/vies.wsdl'
   });
 
   expect(config.database.password).toBe('postgres-password');
-  expect(config.internalApi.token).toBe('internal-token');
   expect(config.telegram.botToken).toBe('telegram-token');
 });
 
@@ -149,7 +140,6 @@ test('direct environment values take precedence over file fallbacks', () => {
     DATABASE_PASSWORD: 'env-password',
     DATABASE_PASSWORD_FILE: databasePasswordFile,
     DATABASE_USER: 'backend',
-    INTERNAL_API_TOKEN: 'internal-token',
     TG_BOT_TOKEN: 'telegram-token',
     VIES_URL: 'https://example.com/vies.wsdl'
   });
@@ -179,7 +169,6 @@ test('parses required admin web environment', () => {
   const config = parseAdminWebConfig({
     ADMIN_BACKEND_URL: 'http://backend:8080',
     HOST: '127.0.0.1',
-    INTERNAL_API_TOKEN: 'internal-token',
     PORT: '18081'
   });
 
@@ -190,26 +179,15 @@ test('parses required admin web environment', () => {
     http: {
       host: '127.0.0.1',
       port: 18081
-    },
-    internalApi: {
-      token: 'internal-token'
     }
   });
 });
 
-test('admin web configuration reads internal API token from file fallback', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'vies-config-'));
-  tempDirs.push(dir);
-  const internalTokenFile = join(dir, 'internal-token');
-  writeFileSync(internalTokenFile, 'internal-token\n');
+test('admin web configuration uses defaults for optional environment', () => {
+  const config = parseAdminWebConfig({});
 
-  const config = parseAdminWebConfig({
-    ADMIN_BACKEND_URL: 'http://backend:8080',
-    INTERNAL_API_TOKEN_FILE: internalTokenFile
-  });
-
-  expect(config.http).toEqual({ host: '0.0.0.0', port: 8081 });
-  expect(config.internalApi.token).toBe('internal-token');
+  expect(config.backend).toEqual({ url: 'http://localhost:8080' });
+  expect(config.http).toEqual({ host: '0.0.0.0', port: 3000 });
 });
 
 test('database configuration reads password from file fallback', () => {
@@ -233,7 +211,6 @@ test('reports missing required backend environment by variable name', () => {
   expect(() => parseBackendConfig({})).toThrow('DATABASE_NAME');
   expect(() => parseBackendConfig({})).toThrow('DATABASE_USER');
   expect(() => parseBackendConfig({})).toThrow('DATABASE_PASSWORD');
-  expect(() => parseBackendConfig({})).toThrow('INTERNAL_API_TOKEN');
   expect(() => parseBackendConfig({})).toThrow('TG_BOT_TOKEN');
   expect(() => parseBackendConfig({})).toThrow('VIES_URL');
 });
@@ -244,7 +221,6 @@ test('parses logger admin notification channel without channel-specific settings
     DATABASE_NAME: 'viesvatchecker',
     DATABASE_PASSWORD: 'postgres-password',
     DATABASE_USER: 'backend',
-    INTERNAL_API_TOKEN: 'internal-token',
     TG_BOT_TOKEN: 'telegram-token',
     VIES_URL: 'https://example.com/vies.wsdl',
     ADMIN_NOTIFICATION_CHANNELS: 'logger'
@@ -264,7 +240,6 @@ test('parses ntfy admin notification channel and token file fallback', () => {
     DATABASE_NAME: 'viesvatchecker',
     DATABASE_PASSWORD: 'postgres-password',
     DATABASE_USER: 'backend',
-    INTERNAL_API_TOKEN: 'internal-token',
     TG_BOT_TOKEN: 'telegram-token',
     VIES_URL: 'https://example.com/vies.wsdl',
     ADMIN_NOTIFICATION_CHANNELS: 'ntfy',
@@ -293,7 +268,6 @@ test('rejects telegram admin notification channel without chat ids', () => {
       DATABASE_NAME: 'viesvatchecker',
       DATABASE_PASSWORD: 'postgres-password',
       DATABASE_USER: 'backend',
-      INTERNAL_API_TOKEN: 'internal-token',
       TG_BOT_TOKEN: 'telegram-token',
       VIES_URL: 'https://example.com/vies.wsdl',
       ADMIN_NOTIFICATION_CHANNELS: 'telegram'
@@ -308,7 +282,6 @@ test('rejects ntfy admin notification channel without url or topic', () => {
       DATABASE_NAME: 'viesvatchecker',
       DATABASE_PASSWORD: 'postgres-password',
       DATABASE_USER: 'backend',
-      INTERNAL_API_TOKEN: 'internal-token',
       TG_BOT_TOKEN: 'telegram-token',
       VIES_URL: 'https://example.com/vies.wsdl',
       ADMIN_NOTIFICATION_CHANNELS: 'ntfy'
@@ -320,7 +293,6 @@ test('rejects ntfy admin notification channel without url or topic', () => {
       DATABASE_NAME: 'viesvatchecker',
       DATABASE_PASSWORD: 'postgres-password',
       DATABASE_USER: 'backend',
-      INTERNAL_API_TOKEN: 'internal-token',
       TG_BOT_TOKEN: 'telegram-token',
       VIES_URL: 'https://example.com/vies.wsdl',
       ADMIN_NOTIFICATION_CHANNELS: 'ntfy',
@@ -335,7 +307,6 @@ test('maps legacy admin notification env to telegram channel', () => {
     DATABASE_NAME: 'viesvatchecker',
     DATABASE_PASSWORD: 'postgres-password',
     DATABASE_USER: 'backend',
-    INTERNAL_API_TOKEN: 'internal-token',
     TG_BOT_TOKEN: 'telegram-token',
     VIES_URL: 'https://example.com/vies.wsdl',
     NOTIFY_ADMIN_ON_UNRECOVERABLE_ERRORS: 'true',
