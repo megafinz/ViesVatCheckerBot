@@ -62,7 +62,12 @@ test('parses required backend environment', () => {
     telegram: {
       botToken: 'telegram-token',
       pollingIntervalMs: 1500,
-      pollingEnabled: true
+      transport: 'long-polling',
+      webhook: {
+        path: '/telegram/webhook',
+        secretToken: undefined,
+        url: undefined
+      }
     },
     vatNumbers: {
       expirationDays: 30,
@@ -86,8 +91,10 @@ test('uses defaults for optional backend environment', () => {
 
   expect(config.http).toEqual({ host: '0.0.0.0', port: 8080 });
   expect(config.nodeEnv).toBe('development');
-  expect(config.telegram.pollingEnabled).toBe(true);
+  expect(config.telegram.transport).toBe('long-polling');
   expect(config.telegram.pollingIntervalMs).toBe(1000);
+  expect(config.telegram.webhook.path).toBe('/telegram/webhook');
+  expect(config.telegram.webhook.path).toBe('/telegram/webhook');
   expect(config.vatNumbers).toEqual({
     expirationDays: 90,
     maxPendingPerUser: 10
@@ -145,6 +152,72 @@ test('direct environment values take precedence over file fallbacks', () => {
   });
 
   expect(config.database.password).toBe('env-password');
+});
+
+test('parses webhook transport configuration', () => {
+  const config = parseBackendConfig({
+    DATABASE_HOST: 'db',
+    DATABASE_NAME: 'viesvatchecker',
+    DATABASE_PASSWORD: 'postgres-password',
+    DATABASE_USER: 'backend',
+    TG_BOT_TOKEN: 'telegram-token',
+    TG_TRANSPORT: 'webhook',
+    TG_WEBHOOK_PATH: '/tg/hook',
+    TG_WEBHOOK_SECRET: 'topsecret',
+    TG_WEBHOOK_URL: 'https://example.com/tg/hook',
+    VIES_URL: 'https://example.com/vies.wsdl'
+  });
+
+  expect(config.telegram.transport).toBe('webhook');
+  expect(config.telegram.webhook).toEqual({
+    path: '/tg/hook',
+    secretToken: 'topsecret',
+    url: 'https://example.com/tg/hook'
+  });
+});
+
+test('rejects unknown Telegram transport', () => {
+  expect(() =>
+    parseBackendConfig({
+      DATABASE_HOST: 'db',
+      DATABASE_NAME: 'viesvatchecker',
+      DATABASE_PASSWORD: 'postgres-password',
+      DATABASE_USER: 'backend',
+      TG_BOT_TOKEN: 'telegram-token',
+      TG_TRANSPORT: 'carrier-pigeon',
+      VIES_URL: 'https://example.com/vies.wsdl'
+    })
+  ).toThrow('TG_TRANSPORT');
+});
+
+test('rejects webhook transport without TG_WEBHOOK_URL', () => {
+  expect(() =>
+    parseBackendConfig({
+      DATABASE_HOST: 'db',
+      DATABASE_NAME: 'viesvatchecker',
+      DATABASE_PASSWORD: 'postgres-password',
+      DATABASE_USER: 'backend',
+      TG_BOT_TOKEN: 'telegram-token',
+      TG_TRANSPORT: 'webhook',
+      TG_WEBHOOK_SECRET: 'topsecret',
+      VIES_URL: 'https://example.com/vies.wsdl'
+    })
+  ).toThrow('TG_WEBHOOK_URL');
+});
+
+test('rejects webhook transport without TG_WEBHOOK_SECRET', () => {
+  expect(() =>
+    parseBackendConfig({
+      DATABASE_HOST: 'db',
+      DATABASE_NAME: 'viesvatchecker',
+      DATABASE_PASSWORD: 'postgres-password',
+      DATABASE_USER: 'backend',
+      TG_BOT_TOKEN: 'telegram-token',
+      TG_TRANSPORT: 'webhook',
+      TG_WEBHOOK_URL: 'https://example.com/hook',
+      VIES_URL: 'https://example.com/vies.wsdl'
+    })
+  ).toThrow('TG_WEBHOOK_SECRET');
 });
 
 test('parses database configuration without non-database service secrets', () => {

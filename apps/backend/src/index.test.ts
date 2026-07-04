@@ -1,5 +1,50 @@
 import { expect, test } from 'bun:test';
+import type {
+  TelegramMessenger,
+  TelegramPollingApi,
+  TelegramWebhookApi
+} from '@viesvatchecker/adapters';
 import { buildDatabaseUrl, createBackendRuntime, startBackend } from './index';
+
+function createStubTelegram(): TelegramPollingApi &
+  TelegramWebhookApi &
+  TelegramMessenger {
+  return {
+    deleteWebhook: async () => {},
+    getUpdates: async () => [],
+    sendMessage: async () => {},
+    setWebhook: async () => {}
+  };
+}
+
+const baseConfig = {
+  expirationDays: 90,
+  maxPendingPerUser: 10,
+  pollingIntervalMs: 1000,
+  transport: 'long-polling' as const,
+  webhook: { path: '/telegram/webhook' }
+};
+
+const baseRepository = {
+  tryAddUniqueVatRequest: async (request: {
+    telegramChatId: string;
+    countryCode: string;
+    vatNumber: string;
+  }) => ({
+    ...request,
+    expirationDate: new Date('2026-09-19T00:00:00.000Z')
+  }),
+  removeVatRequest: async () => false,
+  countVatRequests: async () => 0,
+  getAllVatRequests: async () => [],
+  removeAllVatRequests: async () => true,
+  getAllVatRequestErrors: async () => [],
+  removeVatRequestError: async () => false,
+  resolveVatRequestError: async () => ({ type: 'error-not-found' as const }),
+  updateVatRequest: async () => false
+};
+
+const baseVies = { checkVatNumber: async () => ({ valid: false }) };
 
 test('buildDatabaseUrl builds a postgres URL from backend config fields', () => {
   expect(
@@ -13,36 +58,12 @@ test('buildDatabaseUrl builds a postgres URL from backend config fields', () => 
   ).toBe('postgres://backend:postgres%20password@db:5432/viesvatchecker');
 });
 
-test('createBackendRuntime creates the health app and leaves polling stopped when disabled', async () => {
+test('createBackendRuntime creates the health app and reports the configured transport', async () => {
   const runtime = createBackendRuntime({
-    config: {
-      expirationDays: 90,
-      maxPendingPerUser: 10,
-      pollingEnabled: false,
-      pollingIntervalMs: 1000
-    },
-    repository: {
-      tryAddUniqueVatRequest: async (request) => ({
-        ...request,
-        expirationDate: new Date('2026-09-19T00:00:00.000Z')
-      }),
-      removeVatRequest: async () => false,
-      countVatRequests: async () => 0,
-      getAllVatRequests: async () => [],
-      removeAllVatRequests: async () => true,
-      getAllVatRequestErrors: async () => [],
-      removeVatRequestError: async () => false,
-      resolveVatRequestError: async () => ({ type: 'error-not-found' }),
-      updateVatRequest: async () => false
-    },
-    telegram: {
-      deleteWebhook: async () => {},
-      getUpdates: async () => [],
-      sendMessage: async () => {}
-    },
-    vies: {
-      checkVatNumber: async () => ({ valid: false })
-    }
+    config: baseConfig,
+    repository: baseRepository,
+    telegram: createStubTelegram(),
+    vies: baseVies
   });
 
   const response = await runtime.app.handle(
@@ -52,26 +73,16 @@ test('createBackendRuntime creates the health app and leaves polling stopped whe
   expect(await response.json()).toEqual({
     ok: true,
     service: 'viesvatchecker-backend',
-    telegramPolling: false
+    telegramTransport: 'long-polling'
   });
   expect(runtime.stop).toBeTypeOf('function');
 });
 
 test('createBackendRuntime exposes internal admin routes', async () => {
   const runtime = createBackendRuntime({
-    config: {
-      expirationDays: 90,
-      maxPendingPerUser: 10,
-      pollingEnabled: false,
-      pollingIntervalMs: 1000
-    },
+    config: baseConfig,
     repository: {
-      tryAddUniqueVatRequest: async (request) => ({
-        ...request,
-        expirationDate: new Date('2026-09-19T00:00:00.000Z')
-      }),
-      removeVatRequest: async () => false,
-      countVatRequests: async () => 0,
+      ...baseRepository,
       getAllVatRequests: async () => [
         {
           telegramChatId: '123',
@@ -79,21 +90,10 @@ test('createBackendRuntime exposes internal admin routes', async () => {
           vatNumber: '12345678',
           expirationDate: new Date('2026-09-19T00:00:00.000Z')
         }
-      ],
-      removeAllVatRequests: async () => true,
-      getAllVatRequestErrors: async () => [],
-      removeVatRequestError: async () => false,
-      resolveVatRequestError: async () => ({ type: 'error-not-found' }),
-      updateVatRequest: async () => false
+      ]
     },
-    telegram: {
-      deleteWebhook: async () => {},
-      getUpdates: async () => [],
-      sendMessage: async () => {}
-    },
-    vies: {
-      checkVatNumber: async () => ({ valid: false })
-    }
+    telegram: createStubTelegram(),
+    vies: baseVies
   });
 
   const response = await runtime.app.handle(
@@ -103,46 +103,27 @@ test('createBackendRuntime exposes internal admin routes', async () => {
   expect(response.status).toBe(200);
 });
 
-test('createBackendRuntime calls deleteWebhook before polling starts', async () => {
+test('long-polling transport calls deleteWebhook and getUpdates', async () => {
   let deleteWebhookCalls = 0;
   let getUpdatesCalls = 0;
 
   const runtime = createBackendRuntime({
-    config: {
-      expirationDays: 90,
-      maxPendingPerUser: 10,
-      pollingEnabled: true,
-      pollingIntervalMs: 5
-    },
-    repository: {
-      tryAddUniqueVatRequest: async (request) => ({
-        ...request,
-        expirationDate: new Date('2026-09-19T00:00:00.000Z')
-      }),
-      removeVatRequest: async () => false,
-      countVatRequests: async () => 0,
-      getAllVatRequests: async () => [],
-      removeAllVatRequests: async () => true,
-      getAllVatRequestErrors: async () => [],
-      removeVatRequestError: async () => false,
-      resolveVatRequestError: async () => ({ type: 'error-not-found' }),
-      updateVatRequest: async () => false
-    },
+    config: { ...baseConfig, pollingIntervalMs: 5 },
+    repository: baseRepository,
     telegram: {
+      ...createStubTelegram(),
       deleteWebhook: async () => {
         deleteWebhookCalls += 1;
       },
       getUpdates: async () => {
         getUpdatesCalls += 1;
         return [];
-      },
-      sendMessage: async () => {}
+      }
     },
-    vies: {
-      checkVatNumber: async () => ({ valid: false })
-    }
+    vies: baseVies
   });
 
+  await runtime.transport.start();
   await new Promise((resolve) => setTimeout(resolve, 30));
   await runtime.stop();
 
@@ -150,44 +131,24 @@ test('createBackendRuntime calls deleteWebhook before polling starts', async () 
   expect(getUpdatesCalls).toBeGreaterThan(0);
 });
 
-test('createBackendRuntime backs off when Telegram polling keeps failing', async () => {
+test('long-polling transport backs off when Telegram polling keeps failing', async () => {
   const start = Date.now();
   let calls = 0;
 
   const runtime = createBackendRuntime({
-    config: {
-      expirationDays: 90,
-      maxPendingPerUser: 10,
-      pollingEnabled: true,
-      pollingIntervalMs: 5
-    },
-    repository: {
-      tryAddUniqueVatRequest: async (request) => ({
-        ...request,
-        expirationDate: new Date('2026-09-19T00:00:00.000Z')
-      }),
-      removeVatRequest: async () => false,
-      countVatRequests: async () => 0,
-      getAllVatRequests: async () => [],
-      removeAllVatRequests: async () => true,
-      getAllVatRequestErrors: async () => [],
-      removeVatRequestError: async () => false,
-      resolveVatRequestError: async () => ({ type: 'error-not-found' }),
-      updateVatRequest: async () => false
-    },
+    config: { ...baseConfig, pollingIntervalMs: 5 },
+    repository: baseRepository,
     telegram: {
-      deleteWebhook: async () => {},
+      ...createStubTelegram(),
       getUpdates: async () => {
         calls += 1;
         throw new Error('Telegram is down');
-      },
-      sendMessage: async () => {}
+      }
     },
-    vies: {
-      checkVatNumber: async () => ({ valid: false })
-    }
+    vies: baseVies
   });
 
+  await runtime.transport.start();
   await new Promise((resolve) => setTimeout(resolve, 80));
   await runtime.stop();
   const elapsed = Date.now() - start;
@@ -198,6 +159,70 @@ test('createBackendRuntime backs off when Telegram polling keeps failing', async
   expect(calls).toBeGreaterThan(0);
   expect(calls).toBeLessThan(8);
   expect(elapsed).toBeGreaterThan(0);
+});
+
+test('webhook transport mounts a route, auto-registers, and validates the secret', async () => {
+  const setWebhookCalls: Array<{ secretToken?: string; url: string }> = [];
+  const deleteWebhookCalls: string[] = [];
+
+  const runtime = createBackendRuntime({
+    config: {
+      ...baseConfig,
+      transport: 'webhook',
+      webhook: {
+        path: '/telegram/webhook',
+        secretToken: 'topsecret',
+        url: 'https://bot.example.com/telegram/webhook'
+      }
+    },
+    repository: baseRepository,
+    telegram: {
+      ...createStubTelegram(),
+      setWebhook: async (request) => {
+        setWebhookCalls.push(request);
+      },
+      deleteWebhook: async () => {
+        deleteWebhookCalls.push('called');
+      }
+    },
+    vies: baseVies
+  });
+
+  await runtime.transport.start();
+
+  expect(setWebhookCalls).toEqual([
+    {
+      secretToken: 'topsecret',
+      url: 'https://bot.example.com/telegram/webhook'
+    }
+  ]);
+
+  const bad = await runtime.app.handle(
+    new Request('http://localhost/telegram/webhook', {
+      body: JSON.stringify({ update_id: 1 }),
+      headers: { 'content-type': 'application/json' },
+      method: 'POST'
+    })
+  );
+  expect(bad.status).toBe(401);
+
+  const ok = await runtime.app.handle(
+    new Request('http://localhost/telegram/webhook', {
+      body: JSON.stringify({
+        update_id: 7,
+        message: { chat: { id: 1 }, text: '/list' }
+      }),
+      headers: {
+        'content-type': 'application/json',
+        'x-telegram-bot-api-secret-token': 'topsecret'
+      },
+      method: 'POST'
+    })
+  );
+  expect(ok.status).toBe(200);
+
+  await runtime.stop();
+  expect(deleteWebhookCalls).toEqual(['called']);
 });
 
 test('startBackend starts without running database migrations', async () => {
@@ -212,7 +237,7 @@ test('startBackend starts without running database migrations', async () => {
       HOST: '127.0.0.1',
       PORT: '18080',
       TG_BOT_TOKEN: 'telegram-token',
-      TG_POLLING_ENABLED: 'false',
+      TG_TRANSPORT: 'long-polling',
       VIES_URL: 'https://example.com/vies.wsdl'
     },
     {
@@ -227,28 +252,9 @@ test('startBackend starts without running database migrations', async () => {
           }
         };
       },
-      createRepository: () => ({
-        tryAddUniqueVatRequest: async (request) => ({
-          ...request,
-          expirationDate: new Date('2026-09-19T00:00:00.000Z')
-        }),
-        removeVatRequest: async () => false,
-        countVatRequests: async () => 0,
-        getAllVatRequests: async () => [],
-        removeAllVatRequests: async () => true,
-        getAllVatRequestErrors: async () => [],
-        removeVatRequestError: async () => false,
-        resolveVatRequestError: async () => ({ type: 'error-not-found' }),
-        updateVatRequest: async () => false
-      }),
-      createTelegram: () => ({
-        deleteWebhook: async () => {},
-        getUpdates: async () => [],
-        sendMessage: async () => {}
-      }),
-      createVies: () => ({
-        checkVatNumber: async () => ({ valid: false })
-      }),
+      createRepository: () => baseRepository,
+      createTelegram: () => createStubTelegram(),
+      createVies: () => baseVies,
       listen: (_app, options) => {
         expect(options).toEqual({ hostname: '127.0.0.1', port: 18080 });
         return {

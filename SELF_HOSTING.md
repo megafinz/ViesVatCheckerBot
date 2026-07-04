@@ -53,8 +53,11 @@ Useful options:
 | `DATABASE_MIGRATOR_USER` | `viesvatchecker_migrator` | Role used by `db-migrator` to apply schema changes. |
 | `DATABASE_RUNTIME_USER` | `viesvatchecker_runtime` | Lower-privilege role used by backend and worker services. |
 | `*_FILE` secrets | empty | Optional file paths for Telegram and database passwords. |
-| `TG_POLLING_ENABLED` | `true` | Enables Telegram long polling in the backend. |
-| `TG_POLLING_INTERVAL_MS` | `1000` | Delay between polling cycles. |
+| `TG_TRANSPORT` | `long-polling` | Telegram transport: `long-polling` (default) or `webhook`. See [Telegram Transport](#telegram-transport). |
+| `TG_POLLING_INTERVAL_MS` | `1000` | Delay between polling cycles (long-polling only). |
+| `TG_WEBHOOK_PATH` | `/telegram/webhook` | Path the webhook transport mounts (webhook only). |
+| `TG_WEBHOOK_SECRET` | required when webhook | Shared secret set via BotFather; the backend rejects incoming webhooks that don't match this value. |
+| `TG_WEBHOOK_URL` | required when webhook | Public URL the backend registers with Bot API via `setWebhook` on startup and unregisters on shutdown. |
 | `PENDING_VAT_WORKER_CRON` | `0 * * * *` | Cron schedule for pending VAT checks. |
 | `ADMIN_NOTIFICATION_CHANNELS` | empty | Comma-separated admin notification channels: `logger`, `telegram`, `ntfy`. Empty disables admin notifications. |
 | `ADMIN_TELEGRAM_CHAT_IDS` | empty | Comma-separated Telegram chat IDs for admin notifications. Required when `telegram` is in `ADMIN_NOTIFICATION_CHANNELS`. |
@@ -67,6 +70,32 @@ Useful options:
 | `VIES_URL` | EU VIES WSDL URL | VAT validation endpoint. |
 
 Keep real secrets, hostnames, and deployment-specific overrides in `.env` or a private deployment repo. Do not commit them to this public repository.
+
+## Telegram Transport
+
+The backend talks to Telegram in one of two ways, selected by `TG_TRANSPORT`.
+
+### Long polling (default)
+
+The backend calls Bot API's `getUpdates` on a loop. No public URL is required and no inbound traffic reaches your server. Use this for self-hosting behind NAT or a firewall.
+
+```env
+TG_TRANSPORT=long-polling
+TG_POLLING_INTERVAL_MS=1000
+```
+
+### Webhook
+
+Telegram POSTs each update to a public URL you expose. The backend registers and unregisters the webhook automatically on startup and shutdown. Set the same value as `TG_WEBHOOK_SECRET` in BotFather (`/setwebhook`) and in `.env` so incoming requests are authenticated via the `X-Telegram-Bot-Api-Secret-Token` header.
+
+```env
+TG_TRANSPORT=webhook
+TG_WEBHOOK_URL=https://bot.example.com/telegram/webhook
+TG_WEBHOOK_PATH=/telegram/webhook
+TG_WEBHOOK_SECRET=a-long-random-secret
+```
+
+`TG_WEBHOOK_URL` and `TG_WEBHOOK_SECRET` are required when `TG_TRANSPORT=webhook`. The backend will fail to start if either is missing.
 
 ## Admin Notifications
 

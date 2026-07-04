@@ -65,8 +65,11 @@ services:
       <<: *backend-env
       HOST: 0.0.0.0
       PORT: 8080
-      TG_POLLING_ENABLED: ${TG_POLLING_ENABLED:-true}
       TG_POLLING_INTERVAL_MS: ${TG_POLLING_INTERVAL_MS:-1000}
+      TG_TRANSPORT: ${TG_TRANSPORT:-long-polling}
+      TG_WEBHOOK_PATH: ${TG_WEBHOOK_PATH:-/telegram/webhook}
+      TG_WEBHOOK_SECRET: ${TG_WEBHOOK_SECRET:-}
+      TG_WEBHOOK_URL: ${TG_WEBHOOK_URL:-}
     expose:
       - "8080"
     restart: unless-stopped

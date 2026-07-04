@@ -17,7 +17,7 @@ export function buildComposeSmokeEnvironment(
     DATABASE_RUNTIME_PASSWORD: `runtime-${randomUUID()}`,
     DATABASE_SUPERUSER_PASSWORD: `superuser-${randomUUID()}`,
     TG_BOT_TOKEN: 'compose-smoke-token',
-    TG_POLLING_ENABLED: 'false'
+    TG_TRANSPORT: 'long-polling'
   };
 }
 

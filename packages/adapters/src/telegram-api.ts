@@ -18,6 +18,11 @@ export interface TelegramPollingApi {
   }): Promise<TelegramUpdate[]>;
 }
 
+export interface TelegramWebhookApi {
+  deleteWebhook(): Promise<void>;
+  setWebhook(request: { secretToken?: string; url: string }): Promise<void>;
+}
+
 export interface TelegramMessenger {
   sendMessage(chatId: string, text: string): Promise<void>;
 }
@@ -33,7 +38,7 @@ type TelegramApiResponse<TResult> =
 
 export function createTelegramApi(
   options: TelegramApiOptions
-): TelegramPollingApi & TelegramMessenger {
+): TelegramPollingApi & TelegramWebhookApi & TelegramMessenger {
   const fetchImpl = options.fetch ?? fetch;
 
   return {
@@ -61,6 +66,18 @@ export function createTelegramApi(
         {
           chat_id: chatId,
           text
+        },
+        fetchImpl
+      );
+    },
+
+    async setWebhook(request) {
+      await telegramRequest(
+        options.botToken,
+        'setWebhook',
+        {
+          secret_token: request.secretToken,
+          url: request.url
         },
         fetchImpl
       );

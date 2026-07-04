@@ -3,7 +3,8 @@ import {
   createTelegramApi,
   createViesHttpClient,
   type TelegramMessenger,
-  type TelegramPollingApi
+  type TelegramPollingApi,
+  type TelegramWebhookApi
 } from '@viesvatchecker/adapters';
 import { parseBackendConfig } from '@viesvatchecker/config';
 import type {
@@ -22,7 +23,7 @@ import {
   createCoreVatRequestRepository,
   type VatRequestRepositoryWithExpiration
 } from './repository-adapter';
-import { pollTelegramOnce } from './telegram-polling';
+import { createTelegramTransport } from './telegram-transport';
 import { handleTelegramUpdate } from './telegram-updates';
 
 export { buildDatabaseUrl } from '@viesvatchecker/adapters';
@@ -30,8 +31,13 @@ export { buildDatabaseUrl } from '@viesvatchecker/adapters';
 interface RuntimeConfig {
   expirationDays: number;
   maxPendingPerUser: number;
-  pollingEnabled: boolean;
   pollingIntervalMs: number;
+  transport: 'long-polling' | 'webhook';
+  webhook: {
+    path: string;
+    secretToken?: string;
+    url?: string;
+  };
 }
 
 type RuntimeRepository = VatRequestRepositoryWithExpiration & {
@@ -55,7 +61,7 @@ type RuntimeRepository = VatRequestRepositoryWithExpiration & {
 export interface BackendRuntimeOptions {
   config: RuntimeConfig;
   repository: RuntimeRepository;
-  telegram: TelegramPollingApi & TelegramMessenger;
+  telegram: TelegramPollingApi & TelegramWebhookApi & TelegramMessenger;
   vies: ViesClient;
 }
 
@@ -73,7 +79,9 @@ interface BackendServer {
 export interface StartBackendDependencies<Db> {
   createPostgresClient(databaseUrl: string): BackendPostgresClient<Db>;
   createRepository(db: Db): RuntimeRepository;
-  createTelegram(botToken: string): TelegramPollingApi & TelegramMessenger;
+  createTelegram(
+    botToken: string
+  ): TelegramPollingApi & TelegramWebhookApi & TelegramMessenger;
   createVies(url: string): ViesClient;
   listen(
     app: BackendApp,
@@ -98,44 +106,39 @@ export function createBackendRuntime(options: BackendRuntimeOptions) {
       repository: options.repository,
       telegram: options.telegram
     },
-    pollingEnabled: options.config.pollingEnabled
+    transport: options.config.transport
   });
   const coreRepository = createCoreVatRequestRepository({
     expirationDays: options.config.expirationDays,
     repository: options.repository
   });
-  const stopPolling = options.config.pollingEnabled
-    ? startPollingLoop({
-        intervalMs: options.config.pollingIntervalMs,
-        setup: async () => {
-          await options.telegram.deleteWebhook();
+  const transport = createTelegramTransport({
+    app,
+    config: {
+      pollingIntervalMs: options.config.pollingIntervalMs,
+      transport: options.config.transport,
+      webhook: options.config.webhook
+    },
+    handleUpdate: async (update) => {
+      await handleTelegramUpdate(update, {
+        config: {
+          expirationDays: options.config.expirationDays,
+          maxPendingPerUser: options.config.maxPendingPerUser
         },
-        pollOnce: async (offset) =>
-          await pollTelegramOnce(
-            {
-              api: options.telegram,
-              handleUpdate: async (update) => {
-                await handleTelegramUpdate(update, {
-                  config: {
-                    expirationDays: options.config.expirationDays,
-                    maxPendingPerUser: options.config.maxPendingPerUser
-                  },
-                  repository: coreRepository,
-                  telegram: options.telegram,
-                  vies: options.vies
-                });
-              },
-              maxUpdatesPerCycle: 50,
-              timeoutSeconds: 30
-            },
-            offset
-          )
-      })
-    : () => {};
+        repository: coreRepository,
+        telegram: options.telegram,
+        vies: options.vies
+      });
+    },
+    telegram: options.telegram
+  });
 
   return {
     app,
-    stop: stopPolling
+    transport,
+    stop: async () => {
+      await transport.stop();
+    }
   };
 }
 
@@ -166,8 +169,9 @@ export async function startBackend<Db>(
     config: {
       expirationDays: config.vatNumbers.expirationDays,
       maxPendingPerUser: config.vatNumbers.maxPendingPerUser,
-      pollingEnabled: config.telegram.pollingEnabled,
-      pollingIntervalMs: config.telegram.pollingIntervalMs
+      pollingIntervalMs: config.telegram.pollingIntervalMs,
+      transport: config.telegram.transport,
+      webhook: config.telegram.webhook
     },
     repository: resolvedDeps.createRepository(postgresClient.db),
     telegram: resolvedDeps.createTelegram(config.telegram.botToken),
@@ -179,68 +183,16 @@ export async function startBackend<Db>(
     port: config.http.port
   });
 
+  // Start the transport after the HTTP server is listening so webhook
+  // deliveries can be served immediately.
+  await runtime.transport.start();
+
   return {
     ...runtime,
     stop: async () => {
-      runtime.stop();
+      await runtime.stop();
       await server.stop();
       await postgresClient.close();
-    }
-  };
-}
-
-interface PollingLoopOptions {
-  intervalMs: number;
-  setup?: () => Promise<void>;
-  pollOnce(offset?: number): Promise<number | undefined>;
-}
-
-const MAX_BACKOFF_MS = 60_000;
-
-function startPollingLoop(options: PollingLoopOptions): () => void {
-  let offset: number | undefined;
-  let stopped = false;
-  let timer: Timer | undefined;
-  let consecutiveErrors = 0;
-
-  const tick = async () => {
-    if (stopped) {
-      return;
-    }
-
-    try {
-      if (options.setup) {
-        await options.setup();
-      }
-      offset = await options.pollOnce(offset);
-      consecutiveErrors = 0;
-    } catch (error) {
-      consecutiveErrors += 1;
-      const backoff = Math.min(
-        MAX_BACKOFF_MS,
-        options.intervalMs * 2 ** (consecutiveErrors - 1)
-      );
-      console.error(
-        `Telegram polling failed (attempt ${consecutiveErrors}); retrying in ${backoff}ms`,
-        error
-      );
-      if (!stopped) {
-        timer = setTimeout(tick, backoff);
-      }
-      return;
-    }
-
-    if (!stopped) {
-      timer = setTimeout(tick, options.intervalMs);
-    }
-  };
-
-  timer = setTimeout(tick, 0);
-
-  return () => {
-    stopped = true;
-    if (timer) {
-      clearTimeout(timer);
     }
   };
 }

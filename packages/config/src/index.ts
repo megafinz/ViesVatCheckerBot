@@ -82,8 +82,13 @@ const BackendConfigSchema = z.object({
   nodeEnv: NodeEnvSchema,
   telegram: z.object({
     botToken: z.string().min(1),
-    pollingEnabled: z.boolean(),
-    pollingIntervalMs: z.number().int().positive()
+    pollingIntervalMs: z.number().int().positive(),
+    transport: z.enum(['long-polling', 'webhook']),
+    webhook: z.object({
+      path: z.string().min(1),
+      secretToken: z.string().optional(),
+      url: z.url().optional()
+    })
   }),
   vatNumbers: z.object({
     expirationDays: z.number().int().positive(),
@@ -136,8 +141,11 @@ const BackendEnvObjectSchema = z.object({
   PORT: envNumber.default(8080),
   TG_ADMIN_CHAT_ID: envString.optional(),
   TG_BOT_TOKEN: envString,
-  TG_POLLING_ENABLED: envBoolean.default(true),
   TG_POLLING_INTERVAL_MS: envNumber.default(1000),
+  TG_TRANSPORT: z.enum(['long-polling', 'webhook']).default('long-polling'),
+  TG_WEBHOOK_PATH: z.string().trim().min(1).default('/telegram/webhook'),
+  TG_WEBHOOK_SECRET: envString.optional(),
+  TG_WEBHOOK_URL: envUrl.optional(),
   VAT_NUMBER_EXPIRATION_DAYS: envNumber.default(90),
   VIES_URL: envUrl
 });
@@ -176,6 +184,14 @@ function toBackendConfig(
     throw new Error('Invalid configuration: ADMIN_NTFY_TOPIC');
   }
 
+  if (env.TG_TRANSPORT === 'webhook' && !env.TG_WEBHOOK_URL) {
+    throw new Error('Invalid configuration: TG_WEBHOOK_URL');
+  }
+
+  if (env.TG_TRANSPORT === 'webhook' && !env.TG_WEBHOOK_SECRET) {
+    throw new Error('Invalid configuration: TG_WEBHOOK_SECRET');
+  }
+
   return {
     adminNotifications: {
       channels,
@@ -202,8 +218,13 @@ function toBackendConfig(
     nodeEnv: env.NODE_ENV,
     telegram: {
       botToken: env.TG_BOT_TOKEN,
-      pollingEnabled: env.TG_POLLING_ENABLED,
-      pollingIntervalMs: env.TG_POLLING_INTERVAL_MS
+      pollingIntervalMs: env.TG_POLLING_INTERVAL_MS,
+      transport: env.TG_TRANSPORT,
+      webhook: {
+        path: env.TG_WEBHOOK_PATH,
+        secretToken: env.TG_WEBHOOK_SECRET as string,
+        url: env.TG_WEBHOOK_URL as string
+      }
     },
     vatNumbers: {
       expirationDays: env.VAT_NUMBER_EXPIRATION_DAYS,

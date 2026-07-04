@@ -10,7 +10,7 @@ export interface BackendAppOptions {
     repository: AdminRepository;
     telegram: AdminTelegram;
   };
-  pollingEnabled: boolean;
+  transport: 'long-polling' | 'webhook';
 }
 
 export function createBackendApp(options: BackendAppOptions) {
@@ -19,6 +19,6 @@ export function createBackendApp(options: BackendAppOptions) {
     .get('/health', () => ({
       ok: true,
       service: 'viesvatchecker-backend',
-      telegramPolling: options.pollingEnabled
+      telegramTransport: options.transport
     }));
 }

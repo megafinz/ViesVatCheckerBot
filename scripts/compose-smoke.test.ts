@@ -8,7 +8,7 @@ test('compose smoke environment uses isolated project and required secrets', () 
   const env = buildComposeSmokeEnvironment('vies-smoke-test');
 
   expect(env.COMPOSE_PROJECT_NAME).toBe('vies-smoke-test');
-  expect(env.TG_POLLING_ENABLED).toBe('false');
+  expect(env.TG_TRANSPORT).toBe('long-polling');
   expect(env.ADMIN_NOTIFICATION_CHANNELS).toBe('');
   expect(env.DATABASE_SUPERUSER_PASSWORD).toBeTruthy();
   expect(env.DATABASE_MIGRATOR_PASSWORD).toBeTruthy();

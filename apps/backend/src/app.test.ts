@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { createBackendApp } from './app';
 
-test('health endpoint reports the backend status and polling mode', async () => {
+test('health endpoint reports the backend status and transport', async () => {
   const app = createBackendApp({
     admin: {
       repository: {
@@ -13,7 +13,7 @@ test('health endpoint reports the backend status and polling mode', async () => 
       },
       telegram: { sendMessage: async () => {} }
     },
-    pollingEnabled: true
+    transport: 'long-polling'
   });
 
   const response = await app.handle(new Request('http://localhost/health'));
@@ -22,7 +22,7 @@ test('health endpoint reports the backend status and polling mode', async () => 
   expect(await response.json()).toEqual({
     ok: true,
     service: 'viesvatchecker-backend',
-    telegramPolling: true
+    telegramTransport: 'long-polling'
   });
 });
 
@@ -45,7 +45,7 @@ test('internal admin routes are attached to the backend app', async () => {
       },
       telegram: { sendMessage: async () => {} }
     },
-    pollingEnabled: false
+    transport: 'webhook'
   });
 
   const response = await app.handle(
